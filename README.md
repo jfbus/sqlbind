@@ -134,3 +134,7 @@ s.SetPlaceholderType(sqlbind.MySQL)
 s.Register(Example{}, Foo{})
 s.Named("SELECT * FROM example WHERE name=:name", e)
 ```
+
+## TODO
+
+* Write the lib

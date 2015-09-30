@@ -82,7 +82,7 @@ sqlbind will never expand nil pointer values in `::names` and `::name=::value`.
 
 ### jsontypes
 
-jsontypes defines types that will be able to manage various cases : null values, missing JSON fields, zero/empty values, read-only values.
+[jsontypes](https://github.com/jfbus/jsontypes) defines types that will be able to manage various cases : null values, missing JSON fields, zero/empty values, read-only values.
 
 ```
 type Example struct {

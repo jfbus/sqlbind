@@ -19,10 +19,10 @@ sql, args, err := sqlbind.Named("UPDATE example SET ::name=::value WHERE name=:n
 ```
 Structs, using tags to define DB field names :
 ```
-type example struct {
+type Example struct {
 	Name string `sqlbind:"name"`
 }
-e := example{Name: "foo"}
+e := Example{Name: "foo"}
 sql, args, err := sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
 ```
 
@@ -45,33 +45,33 @@ sql, args, err := sqlbind.Named("INSERT INTO example (::names) VALUES(::values)"
 ```
 or using struct tags :
 ```
-type example struct {
+type Example struct {
 	ID   int    `sqlbind:"id,nonames,noname"` // will not be expanded by ::names and ::name=::value
 }
 ```
 
 ## JSON and missing fields
 
-In a REST API, update (`PATCH`) calls may update only certain fields. When using structs with plain types, it is impossible to differentiate between empty fields `{"name":""}`, null fields : `{"name": null}` and missing fields : `{}`.
+In a REST API, `PATCH` update calls may update only certain fields. When using structs with plain types, it is impossible to differentiate between empty fields `{"name":""}`, null fields : `{"name": null}` and missing fields : `{}`.
 
 ### pointers
 
 ```
-type example struct {
+type Example struct {
 	Name *string `sqlbind:"name"`
 }
 ```
 
 Using pointers can differentiate between empty fields and null/missing fields, but not between null and missing fields. In this case, nil values are usually considered "missing values".
 
-sqlbind will never expand nil pointer values in by `::names` and `::name=::value`.
+sqlbind will never expand nil pointer values in `::names` and `::name=::value`.
 
 ### jsontypes
 
 jsontypes defines types that will be able to manage various cases : null values, missing JSON fields, zero/empty values, read-only values.
 
 ```
-type example struct {
+type Example struct {
 	Name jsontypes.NullString `sqlbind:"name"`
 }
 ```
@@ -85,7 +85,7 @@ See jsontypes for all types.
 ## Result struct binding
 
 ```
-type example struct {
+type Example struct {
 	ID   int    `sqlbind:"id,nonames,noname"` // will not be expanded by ::names and ::name=::value
 	Name string `sqlbind:"name"`
 }
@@ -93,7 +93,7 @@ rows, err := db.Query("SELECT * FROM example")
 ...
 defer rows.Close()
 for rows.Next() {
-    e := example{}
+    e := Example{}
     err = sqlbind.ScanRows(rows, &e)
 }
 ```

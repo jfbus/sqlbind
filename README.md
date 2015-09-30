@@ -1,6 +1,6 @@
 # sqlbind
 
-sqlbind is a set of `database/sql` helpers to remove most of the boilerplate code while using standard `database/sql` calls.
+sqlbind is a set of `database/sql` helpers to remove a lot of boilerplate code while always using standard `database/sql` calls.
 
 ## Named parameters
 
@@ -41,13 +41,20 @@ Not all fields need to be expanded by `::names` and `::name=::value`.
 
 This can be achieved using an optional parameter to `sqlbin.Named` :
 ```
-sql, args, err := sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, []string{"name"})
+sql, args, err := sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Only("name"))
 ```
 or using struct tags :
 ```
 type Example struct {
 	ID   int    `sqlbind:"id,nonames,noname"` // will not be expanded by ::names and ::name=::value
 }
+```
+
+## Variables
+
+Additional variables can be added to SQL queries :
+```
+sql, args, err := sqlbind.Named("SELECT /* {{comment}} */ * FROM {{table_prefix}}example WHERE name=:name", e, sqlbind.Variables("comment", "foo", "table_prefix", "bar_"))
 ```
 
 ## JSON and missing fields

@@ -14,6 +14,7 @@ It adds :
 Building queries using named variables :
 ```
 sql, args, err := sqlbind.Named("SELECT * FROM example WHERE name=:name", map[string]interface{}{"name":"foo"})
+rows, err := db.Query(sql, args...)
 ```
 Automatic in clause expansion :
 ```
@@ -76,13 +77,13 @@ type Example struct {
 }
 ```
 
-Using pointers can differentiate between empty fields and null/missing fields, but not between null and missing fields. In this case, nil values are usually considered "missing values".
+Using pointers can differentiate between empty fields and null/missing fields, but not between null and missing fields. In this case, nil values are usually considered missing.
 
 sqlbind will never expand nil pointer values in `::names` and `::name=::value`.
 
 ### jsontypes
 
-[jsontypes](https://github.com/jfbus/jsontypes) defines types that will be able to manage various cases : null values, missing JSON fields, zero/empty values, read-only values. All types are automatically converted to their underlying type when reading/writing to the database.
+[jsontypes](https://github.com/jfbus/jsontypes) defines types that will be able to manage various cases : null values, missing JSON fields, zero/empty values, read-only values. All types are automatically converted from/to their underlying type when reading/writing to the database.
 
 ```
 type Example struct {
@@ -94,7 +95,7 @@ type Example struct {
 * `jsontypes.String` will either be expanded to `""` (`""` or `null` in JSON) or not expanded (absent from JSON)
 * `jsontypes.ROString` will never be expanded
 
-See jsontypes for all types.
+See [jsontypes](https://github.com/jfbus/jsontypes) for all types.
 
 ## Result struct binding
 

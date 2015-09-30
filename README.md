@@ -2,6 +2,13 @@
 
 sqlbind is a set of `database/sql` helpers to remove a lot of boilerplate code while always using standard `database/sql` calls.
 
+It adds :
+
+* Named parameters,
+* Binding named parameters to structs,
+* Binding structs to `sql.Row`/`sql.Rows` results,
+* Variables in SQL queries.
+
 ## Named parameters
 
 Building queries using named variables :

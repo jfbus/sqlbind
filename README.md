@@ -11,19 +11,19 @@ It adds :
 
 ## Named parameters
 
-Building queries using named variables :
+Basic usage, using maps :
 ```
 sql, args, err := sqlbind.Named("SELECT * FROM example WHERE name=:name", map[string]interface{}{"name":"foo"})
 rows, err := db.Query(sql, args...)
 ```
-Automatic in clause expansion :
+Automatic `IN` clause expansion :
 ```
-sql, args, err := sqlbind.Named("SELECT * FROM example WHERE name IN(:name)", map[string]interface{}{"name":[]string{"foo", "bar"}})
+sqlbind.Named("SELECT * FROM example WHERE name IN(:name)", map[string]interface{}{"name":[]string{"foo", "bar"}})
 ```
 Variable args :
 ```
-sql, args, err := sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"name":"foo"}'})
-sql, args, err := sqlbind.Named("UPDATE example SET ::name=::value WHERE name=:name", map[string]interface{}{"name":"foo"}'})
+sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"name":"foo"}'})
+sqlbind.Named("UPDATE example SET ::name=::value WHERE name=:name", map[string]interface{}{"name":"foo"}'})
 ```
 Structs, using tags to define DB field names :
 ```
@@ -31,7 +31,7 @@ type Example struct {
 	Name string `sqlbind:"name"`
 }
 e := Example{Name: "foo"}
-sql, args, err := sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
+sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
 ```
 
 Named placeholders are automatically translated to the right driver-dependant placeholder : `?` for MySQL or `$N` for Postgresql.
@@ -49,7 +49,7 @@ Not all fields need to be expanded by `::names` and `::name=::value`.
 
 This can be achieved using an optional parameter to `sqlbin.Named` :
 ```
-sql, args, err := sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Only("name"))
+sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Only("name"))
 ```
 or using struct tags :
 ```
@@ -62,7 +62,7 @@ type Example struct {
 
 Additional variables can be added to SQL queries :
 ```
-sql, args, err := sqlbind.Named("SELECT /* {{comment}} */ * FROM {{table_prefix}}example WHERE name=:name", e, sqlbind.Variables("comment", "foo", "table_prefix", "bar_"))
+sqlbind.Named("SELECT /* {{comment}} */ * FROM {{table_prefix}}example WHERE name=:name", e, sqlbind.Variables("comment", "foo", "table_prefix", "bar_"))
 ```
 
 ## JSON and missing fields

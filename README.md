@@ -9,6 +9,8 @@ It adds :
 * Binding structs to `sql.Row`/`sql.Rows` results,
 * Variables in SQL queries.
 
+sqlbind generates as little sql code as possible, letting you fine tune your sql requests.
+
 ## Named parameters
 
 Basic usage, using maps :
@@ -36,12 +38,14 @@ sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
 
 Named placeholders are automatically translated to the right driver-dependant placeholder : `?` for MySQL or `$N` for Postgresql.
 ```
-sqlbind.SetPlaceholderType(sqlbind.MySQL)
+sqlbind.SetStyle(sqlbind.MySQL)
 ```
 or
 ```
-sqlbind.SetPlaceholderType(sqlbind.Postgresql)
+sqlbind.SetStyle(sqlbind.Postgresql)
 ```
+
+Colons inside quotes are ignored and do not need to be escaped : `":value"` will not be considered a parameter.
 
 ## Controling ::names and ::name=::value
 
@@ -50,6 +54,7 @@ Not all fields need to be expanded by `::names` and `::name=::value`.
 This can be achieved using an optional parameter to `sqlbin.Named` :
 ```
 sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Only("name"))
+sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Exclude("id"))
 ```
 or using struct tags :
 ```
@@ -62,8 +67,10 @@ type Example struct {
 
 Additional variables can be added to SQL queries :
 ```
-sqlbind.Named("SELECT /* {{comment}} */ * FROM {{table_prefix}}example WHERE name=:name", e, sqlbind.Variables("comment", "foo", "table_prefix", "bar_"))
+sqlbind.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE name=:name", e, sqlbind.Variables("comment", "foo", "table_prefix", "bar_"))
 ```
+
+Braces inside quotes are ignored : `"{value}"` will not be modified.
 
 ## JSON and missing fields
 

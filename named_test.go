@@ -170,6 +170,14 @@ func TestNamed(t *testing.T) {
 		Nil: nil,
 	}, tc, "structptr")
 
+	Register(testStruct{})
+	doTest(t, testStruct{
+		Foo: "foobar",
+		Bar: "barbar",
+		Int: 42,
+		Nil: nil,
+	}, tc, "registered")
+
 	type e struct {
 		Id  int    `sqlbind:"-"`
 		Foo string `sqlbind:"foo"`

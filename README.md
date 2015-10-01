@@ -116,12 +116,13 @@ rows, err := db.Query("SELECT * FROM example")
 defer rows.Close()
 for rows.Next() {
     e := Example{}
-    err = sqlbind.ScanRows(rows, &e)
+    err = sqlbind.Scan(rows, &e)
 }
 ```
+QueryRow does not expose the column names, Query+ScanRow can be used instead.
 ```
-row := db.QueryRow("SELECT * FROM example")
-err := sqlbind.ScanRow(row, &e)
+rows, err := db.Query("SELECT * FROM example")
+err := sqlbind.ScanRow(rows, &e) // closes
 ```
 
 Slices of structs are not mapped, only structs.

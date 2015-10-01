@@ -88,6 +88,7 @@ func scanColon(d *decodeState, str string) int {
 var allowedPlaceholderRunes = []*unicode.RangeTable{unicode.Letter, unicode.Digit}
 
 func scanPlaceholder(d *decodeState, str string) int {
+	// TODO : try DecodeRuneInString to enable UTF8 placeholder
 	if !unicode.IsOneOf(allowedPlaceholderRunes, rune(str[0])) && str[0] != '_' {
 		d.step = scanSQL
 		return typeSQL

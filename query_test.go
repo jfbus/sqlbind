@@ -135,6 +135,12 @@ func TestNamed(t *testing.T) {
 			args:  []interface{}{"foobar", 42, nil},
 		},
 		{
+			src:   `SELECT ::bar FROM foo`,
+			mySQL: `SELECT :bar FROM foo`,
+			pgSQL: `SELECT :bar FROM foo`,
+			args:  []interface{}{},
+		},
+		{
 			src:   `UPDATE example SET ::name=::value WHERE bar=:bar`,
 			mySQL: `UPDATE example SET bar=?, foo=?, int=?, nil=? WHERE bar=?`,
 			pgSQL: `UPDATE example SET bar=$1, foo=$2, int=$3, nil=$4 WHERE bar=$5`,

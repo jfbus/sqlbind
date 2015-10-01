@@ -45,7 +45,7 @@ or
 sqlbind.SetStyle(sqlbind.Postgresql)
 ```
 
-Colons inside quotes are ignored and do not need to be escaped : `":value"` will not be considered a parameter.
+Colons inside quotes are ignored and do not need to be escaped (`":value"` will neither be rewritten neither considered a named parameter), but otherwise need to be doubled (`::value` will be rewritten to `:value` but not be considered a named parameter). 
 
 ## Controling ::names and ::name=::value
 
@@ -137,8 +137,7 @@ sqlbind.Register(Example{}, Foo{})
 
 You can build a SQLBinder instance :
 ```
-s := sqlbind.New()
-s.SetPlaceholderType(sqlbind.MySQL)
+s := sqlbind.New(sqlbind.MySQL)
 s.Register(Example{}, Foo{})
 s.Named("SELECT * FROM example WHERE name=:name", e)
 ```

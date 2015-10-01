@@ -79,8 +79,7 @@ func scanString(d *decodeState, str string) int {
 
 func scanColon(d *decodeState, str string) int {
 	if str[0] == ':' {
-		d.step = scanDoubleColon
-		return typeSeparator
+		return scanDoubleColon(d, str)
 	}
 	d.step = scanPlaceholder
 	return d.step(d, str)
@@ -99,12 +98,15 @@ func scanPlaceholder(d *decodeState, str string) int {
 
 func scanDoubleColon(d *decodeState, str string) int {
 	switch {
-	case len(str) >= 12 && str[:12] == "name=::value":
-		d.step = skipN(12, typeNameValue)
-	case len(str) >= 5 && str[:5] == "names":
-		d.step = skipN(5, typeNames)
-	case len(str) >= 6 && str[:6] == "values":
-		d.step = skipN(6, typeValues)
+	case len(str) >= 13 && str[:13] == ":name=::value":
+		d.step = skipN(13, typeNameValue)
+	case len(str) >= 6 && str[:6] == ":names":
+		d.step = skipN(6, typeNames)
+	case len(str) >= 7 && str[:7] == ":values":
+		d.step = skipN(7, typeValues)
+	default:
+		d.step = scanSQL
+		return typeSQL
 	}
 	return d.step(d, str)
 }

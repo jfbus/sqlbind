@@ -3,7 +3,6 @@ package sqlbind
 import (
 	"errors"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -67,7 +66,7 @@ func Named(sql string, args interface{}, opts ...namedOption) (string, []interfa
 //   rows, err := db.Query(sql, sqlargs...)
 //
 // args can either be a map[string]interface{} or a struct
-func (s *SQLBinder) Named(sql string, args interface{}, opts ...namedOption) (string, []interface{}, error) {
+func (s *SQLBinder) Named(sql string, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
 	var c *compiled
 	var found bool
 	s.Lock()
@@ -77,10 +76,7 @@ func (s *SQLBinder) Named(sql string, args interface{}, opts ...namedOption) (st
 		s.cache[sql] = c
 	}
 	s.Unlock()
-	if m, ok := args.(map[string]interface{}); ok {
-		return s.namedMap(c, m, opts...)
-	}
-	return "", nil, ErrUnsupportedFormat
+	return s.named(c, arg, opts...)
 }
 
 // Variables sets variable values. If a variable has no value, it is replaced with an empty string.
@@ -187,17 +183,11 @@ func replaceNamesValues(e *context) error {
 	return nil
 }
 
-func (s *SQLBinder) namedMap(c *compiled, m map[string]interface{}, opts ...namedOption) (string, []interface{}, error) {
+func (s *SQLBinder) named(c *compiled, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
 	e := &context{
-		names: make([]string, 0, len(m)),
+		names: names(arg),
 		parts: c.parts,
 	}
-
-	for name := range m {
-		e.names = append(e.names, name)
-	}
-	tmp := sort.StringSlice(e.names)
-	sort.Sort(&tmp)
 
 	for _, opt := range opts {
 		if err := opt(e); err != nil {
@@ -214,19 +204,20 @@ func (s *SQLBinder) namedMap(c *compiled, m map[string]interface{}, opts ...name
 		case typeSQL:
 			sql += p.data
 		case typePlaceholder:
-			if val := reflect.ValueOf(m[p.data]); val.Kind() == reflect.Slice {
-				for si := 0; si < val.Len(); si++ {
+			val := value(arg, p.data)
+			if rval := reflect.ValueOf(val); rval.Kind() == reflect.Slice {
+				for si := 0; si < rval.Len(); si++ {
 					if si != 0 {
 						sql += ", "
 					}
 					sql += s.placeholder(i)
 					i++
-					args = append(args, val.Index(si).Interface())
+					args = append(args, rval.Index(si).Interface())
 				}
 			} else {
 				sql += s.placeholder(i)
 				i++
-				args = append(args, m[p.data])
+				args = append(args, val)
 			}
 		default:
 			return "", nil, errors.New("Unhandled part type")

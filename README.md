@@ -59,7 +59,7 @@ sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]inter
 or using struct tags :
 ```
 type Example struct {
-	ID   int    `sqlbind:"id,nonames,noname"` // will not be expanded by ::names and ::name=::value
+	ID   int    `sqlbind:"id,omit"` // will not be expanded by ::names and ::name=::value
 }
 ```
 
@@ -108,7 +108,7 @@ See [jsontypes](https://github.com/jfbus/jsontypes) for all types.
 
 ```
 type Example struct {
-	ID   int    `sqlbind:"id,nonames,noname"` // will not be expanded by ::names and ::name=::value
+	ID   int    `sqlbind:"id,omit"`
 	Name string `sqlbind:"name"`
 }
 rows, err := db.Query("SELECT * FROM example")
@@ -119,7 +119,7 @@ for rows.Next() {
     err = sqlbind.Scan(rows, &e)
 }
 ```
-QueryRow does not expose the column names, Query+ScanRow can be used instead.
+QueryRow does not expose column names, Query+ScanRow can be used instead.
 ```
 rows, err := db.Query("SELECT * FROM example")
 err := sqlbind.ScanRow(rows, &e) // closes
@@ -145,4 +145,5 @@ s.Named("SELECT * FROM example WHERE name=:name", e)
 
 ## TODO
 
-* Write the lib
+* Binding
+* Performance

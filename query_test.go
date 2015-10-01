@@ -13,7 +13,7 @@ type testCase struct {
 	args  []interface{}
 }
 
-func doTest(t *testing.T, data map[string]interface{}, table []testCase) {
+func doTest(t *testing.T, data interface{}, table []testCase, comment string) {
 	my := New(MySQL)
 	pg := New(Postgresql)
 	for _, it := range table {
@@ -22,34 +22,29 @@ func doTest(t *testing.T, data map[string]interface{}, table []testCase) {
 		}
 		mySQL, myArgs, myErr := my.Named(it.src, data, it.opts...)
 		if myErr != nil {
-			t.Errorf("[MySQL] Unable to generate sql for '%s' : %s", it.src, myErr)
+			t.Errorf("[%s][MySQL] Unable to generate sql for '%s' : %s", comment, it.src, myErr)
 		}
 		if mySQL != it.mySQL {
-			t.Errorf("[MySQL] Expected sql for '%s' was '%s' but got '%s'", it.src, it.mySQL, mySQL)
+			t.Errorf("[%s][MySQL] Expected sql for '%s' was '%s' but got '%s'", comment, it.src, it.mySQL, mySQL)
 		}
 		if !reflect.DeepEqual(myArgs, it.args) {
-			t.Errorf("[MySQL] Expected args for '%s' was '%v' but got '%v'", it.src, it.args, myArgs)
+			t.Errorf("[%s][MySQL] Expected args for '%s' were '%v' but got '%v'", comment, it.src, it.args, myArgs)
 		}
 		pgSQL, pgArgs, pgErr := pg.Named(it.src, data, it.opts...)
 		if pgErr != nil {
-			t.Errorf("[Posgresql] Unable to generate sql for '%s' : %s", it.src, pgErr)
+			t.Errorf("[%s][Posgresql] Unable to generate sql for '%s' : %s", comment, it.src, pgErr)
 		}
 		if pgSQL != it.pgSQL {
-			t.Errorf("[Posgresql] Expected sql for '%s' was '%s' but got '%s'", it.src, it.pgSQL, pgSQL)
+			t.Errorf("[%s][Posgresql] Expected sql for '%s' was '%s' but got '%s'", comment, it.src, it.pgSQL, pgSQL)
 		}
 		if !reflect.DeepEqual(pgArgs, it.args) {
-			t.Errorf("[Posgresql] Expected args for '%s' was '%v' but got '%v'", it.src, it.args, pgArgs)
+			t.Errorf("[%s][Posgresql] Expected args for '%s' were '%v' but got '%v'", comment, it.src, it.args, pgArgs)
 		}
 	}
 }
 
 func TestNamed(t *testing.T) {
-	doTest(t, map[string]interface{}{
-		"foo": "foobar",
-		"bar": "barbar",
-		"int": 42,
-		"nil": nil,
-	}, []testCase{
+	tc := []testCase{
 		{
 			src:   ``,
 			mySQL: ``,
@@ -146,14 +141,62 @@ func TestNamed(t *testing.T) {
 			pgSQL: `UPDATE example SET bar=$1, foo=$2, int=$3, nil=$4 WHERE bar=$5`,
 			args:  []interface{}{"barbar", "foobar", 42, nil, "barbar"},
 		},
-	})
+	}
+
+	doTest(t, map[string]interface{}{
+		"foo": "foobar",
+		"bar": "barbar",
+		"int": 42,
+		"nil": nil,
+	}, tc, "map")
+
+	type testStruct struct {
+		Id  int         `sqlbind:"-"`
+		Foo string      `sqlbind:"foo"`
+		Bar string      `sqlbind:"bar"`
+		Int int         `sqlbind:"int"`
+		Nil interface{} `sqlbind:"nil"`
+	}
+	doTest(t, testStruct{
+		Foo: "foobar",
+		Bar: "barbar",
+		Int: 42,
+		Nil: nil,
+	}, tc, "struct")
+	doTest(t, &testStruct{
+		Foo: "foobar",
+		Bar: "barbar",
+		Int: 42,
+		Nil: nil,
+	}, tc, "structptr")
+
+	type e struct {
+		Id  int    `sqlbind:"-"`
+		Foo string `sqlbind:"foo"`
+	}
+	type f struct {
+		Int int `sqlbind:"int"`
+	}
+	type testStructEmbed struct {
+		E   e
+		Bar string `sqlbind:"bar"`
+		F   f
+		Nil interface{} `sqlbind:"nil"`
+	}
+	doTest(t, testStructEmbed{
+		E: e{
+			Foo: "foobar",
+		},
+		Bar: "barbar",
+		F: f{
+			Int: 42,
+		},
+		Nil: nil,
+	}, tc, "embed")
 }
 
 func TestNamedIn(t *testing.T) {
-	doTest(t, map[string]interface{}{
-		"foo": "foobar",
-		"bar": []string{"barbar", "barbaz"},
-	}, []testCase{
+	tc := []testCase{
 		{
 			src:   ``,
 			mySQL: ``,
@@ -166,5 +209,73 @@ func TestNamedIn(t *testing.T) {
 			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar IN($2, $3)`,
 			args:  []interface{}{"foobar", "barbar", "barbaz"},
 		},
-	})
+	}
+	doTest(t, map[string]interface{}{
+		"foo": "foobar",
+		"bar": []string{"barbar", "barbaz"},
+	}, tc, "map/in")
+	type testStructIn struct {
+		Foo string   `sqlbind:"foo"`
+		Bar []string `sqlbind:"bar"`
+	}
+	doTest(t, testStructIn{
+		Foo: "foobar",
+		Bar: []string{"barbar", "barbaz"},
+	}, tc, "struct/in")
+}
+
+func TestOmit(t *testing.T) {
+	tc := []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (foo) VALUES(?)`,
+			pgSQL: `INSERT INTO example (foo) VALUES($1)`,
+			args:  []interface{}{"foobar"},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value WHERE bar=:bar`,
+			mySQL: `UPDATE example SET foo=? WHERE bar=?`,
+			pgSQL: `UPDATE example SET foo=$1 WHERE bar=$2`,
+			args:  []interface{}{"foobar", "barbar"},
+		},
+	}
+	type testStructOmit struct {
+		Foo string `sqlbind:"foo"`
+		Bar string `sqlbind:"bar,omit"`
+	}
+	doTest(t, testStructOmit{
+		Foo: "foobar",
+		Bar: "barbar",
+	}, tc, "struct/omit")
+}
+
+func TestNoTag(t *testing.T) {
+	tc := []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (Bar, Foo) VALUES(?, ?)`,
+			pgSQL: `INSERT INTO example (Bar, Foo) VALUES($1, $2)`,
+			args:  []interface{}{"barbar", "foobar"},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value`,
+			mySQL: `UPDATE example SET Bar=?, Foo=?`,
+			pgSQL: `UPDATE example SET Bar=$1, Foo=$2`,
+			args:  []interface{}{"barbar", "foobar"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{"foobar", "barbar"},
+		},
+	}
+	type testStructOmit struct {
+		Foo string
+		Bar string
+	}
+	doTest(t, testStructOmit{
+		Foo: "foobar",
+		Bar: "barbar",
+	}, tc, "struct/notag")
 }

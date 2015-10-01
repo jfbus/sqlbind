@@ -19,6 +19,7 @@ var (
 	defaultBinder        = New(MySQL)
 )
 
+// The placeholder style to be used, either MySQL (?) or Postgresql ($N)
 type Style int
 
 type SQLBinder struct {
@@ -28,6 +29,7 @@ type SQLBinder struct {
 	cache map[string]*compiled
 }
 
+// New creates a SQLBinder object, using the specified placeholder style
 func New(style Style) *SQLBinder {
 	return &SQLBinder{
 		style: style,
@@ -35,6 +37,7 @@ func New(style Style) *SQLBinder {
 	}
 }
 
+// SetStyle sets the style of the default binder
 func SetStyle(style Style) {
 	defaultBinder.style = style
 }
@@ -46,10 +49,24 @@ type context struct {
 
 type namedOption func(*context) error
 
+// Named formats a SQL query, parsing named parameters and variables using the default binder.
+// It returns the SQL query and the list of parameters to be used for the database/sql call
+//
+//   sql, sqlargs, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", args)
+//   rows, err := db.Query(sql, sqlargs...)
+//
+// args can either be a map[string]interface{} or a struct
 func Named(sql string, args interface{}, opts ...namedOption) (string, []interface{}, error) {
 	return defaultBinder.Named(sql, args, opts...)
 }
 
+// Named formats a SQL query, parsing named parameters and variables using the specified binder
+// It returns the SQL query and the list of parameters to be used for the database/sql call
+//
+//   sql, sqlargs, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", args)
+//   rows, err := db.Query(sql, sqlargs...)
+//
+// args can either be a map[string]interface{} or a struct
 func (s *SQLBinder) Named(sql string, args interface{}, opts ...namedOption) (string, []interface{}, error) {
 	var c *compiled
 	var found bool
@@ -66,12 +83,9 @@ func (s *SQLBinder) Named(sql string, args interface{}, opts ...namedOption) (st
 	return "", nil, ErrUnsupportedFormat
 }
 
-func errorOption(err error) namedOption {
-	return func(e *context) error {
-		return err
-	}
-}
-
+// Variables sets variable values. If a variable has no value, it is replaced with an empty string.
+//
+//   sqlbin.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE foo=:foo", args, sqlbind.Variables("comment", "foobar", "table_prefix", "foo_"))
 func Variables(vars ...string) namedOption {
 	if len(vars) != 2 {
 		return errorOption(errors.New("Variables must have a multiple of 2 args"))
@@ -97,6 +111,13 @@ func Variables(vars ...string) namedOption {
 	}
 }
 
+// Only sets the list of parameters to be used in ::names, ::values and ::name=::value tags.
+//
+//  sqlbin.Named("UPDATE example SET ::name=::value WHERE foo=:foo", args, sqlbind.Only("bar", "baz"))
+//
+// would be equivalent to :
+//
+//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", args)
 func Only(names ...string) namedOption {
 	return func(e *context) error {
 		e.names = names
@@ -104,6 +125,13 @@ func Only(names ...string) namedOption {
 	}
 }
 
+// Exclude removes parameters from ::names, ::values and ::name=::value tags.
+//
+//  sqlbin.Named("UPDATE example SET ::name=::value WHERE foo=:foo", args, sqlbind.Exclude("foo"))
+//
+// would be equivalent to :
+//
+//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", args)
 func Exclude(names ...string) namedOption {
 	ex := map[string]struct{}{}
 	for _, name := range names {
@@ -119,6 +147,12 @@ func Exclude(names ...string) namedOption {
 		}
 		e.names = n
 		return nil
+	}
+}
+
+func errorOption(err error) namedOption {
+	return func(e *context) error {
+		return err
 	}
 }
 

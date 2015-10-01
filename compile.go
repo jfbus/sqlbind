@@ -43,7 +43,7 @@ func compile(str string) *compiled {
 		}
 		cur = next
 	}
-	if len(str) > start {
+	if len(str) > start && cur != typeSeparator {
 		c.parts = append(c.parts, part{t: cur, data: str[start:]})
 	}
 	return c

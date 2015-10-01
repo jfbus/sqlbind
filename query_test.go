@@ -101,10 +101,10 @@ func TestNamed(t *testing.T) {
 			args:  []interface{}{"foobar"},
 		},
 		{
-			src:   `/* {comment} */`,
+			src:   `{comment}`,
 			opts:  []namedOption{Variables("comment", "foobarbaz")},
-			mySQL: `/* foobarbaz */`,
-			pgSQL: `/* foobarbaz */`,
+			mySQL: `foobarbaz`,
+			pgSQL: `foobarbaz`,
 			args:  []interface{}{},
 		},
 		{

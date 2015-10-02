@@ -9,7 +9,7 @@ It adds :
 * Binding structs to `sql.Row`/`sql.Rows` results,
 * Variables in SQL queries.
 
-sqlbind generates as little sql code as possible, letting you fine tune your sql requests.
+sqlbind generates as little SQL code as possible, letting you fine tune your SQL requests.
 
 ## Named parameters
 
@@ -25,29 +25,29 @@ sqlbind.Named("SELECT * FROM example WHERE name IN(:name)", map[string]interface
 Variable args :
 ```
 sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"name":"foo"}'})
-sqlbind.Named("UPDATE example SET ::name=::value WHERE name=:name", map[string]interface{}{"name":"foo"}'})
+sqlbind.Named("UPDATE example SET ::name=::value", map[string]interface{}{"name":"foo"}'})
 ```
 Structs, using tags to define DB field names :
 ```
 type Example struct {
-	Name string `sqlbind:"name"`
+	Name string `db:"name"`
 }
 e := Example{Name: "foo"}
 sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
 ```
 
-Named placeholders are automatically translated to the right driver-dependant placeholder : `?` for MySQL or `$N` for Postgresql.
+Named placeholders are automatically translated to the right driver-dependant placeholder : `?` for MySQL (default style)
 ```
 sqlbind.SetStyle(sqlbind.MySQL)
 ```
-or
+or `$N` for Postgresql
 ```
 sqlbind.SetStyle(sqlbind.Postgresql)
 ```
 
 Colons inside quotes are ignored and do not need to be escaped (`":value"` will neither be rewritten neither considered a named parameter), but otherwise need to be doubled (`::value` will be rewritten to `:value` but not be considered a named parameter). 
 
-## Controling ::names and ::name=::value
+## Controlling ::names and ::name=::value
 
 Not all fields need to be expanded by `::names` and `::name=::value`.
 
@@ -84,7 +84,7 @@ type Example struct {
 }
 ```
 
-Using pointers can differentiate between empty fields and null/missing fields, but not between null and missing fields. In this case, nil values are usually considered missing.
+Using pointers, one can differentiate between empty fields and null/missing fields, but not between null and missing fields. In this case, nil values are usually considered missing.
 
 sqlbind will never expand nil pointer values in `::names` and `::name=::value`.
 
@@ -108,8 +108,8 @@ See [jsontypes](https://github.com/jfbus/jsontypes) for all types.
 
 ```
 type Example struct {
-	ID   int    `sqlbind:"id,omit"`
-	Name string `sqlbind:"name"`
+	ID   int    `db:"id,omit"`
+	Name string `db:"name"`
 }
 rows, err := db.Query("SELECT * FROM example")
 ...

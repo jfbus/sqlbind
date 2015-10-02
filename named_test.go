@@ -9,7 +9,7 @@ import (
 
 type testCase struct {
 	src   string
-	opts  []namedOption
+	opts  []NamedOption
 	mySQL string
 	pgSQL string
 	args  []interface{}
@@ -20,7 +20,7 @@ func doTest(t *testing.T, data interface{}, table []testCase, comment string) {
 	pg := New(Postgresql)
 	for _, it := range table {
 		if it.opts == nil {
-			it.opts = []namedOption{}
+			it.opts = []NamedOption{}
 		}
 		mySQL, myArgs, myErr := my.Named(it.src, data, it.opts...)
 		if myErr != nil {
@@ -85,28 +85,28 @@ func TestNamed(t *testing.T) {
 		},
 		{
 			src:   `SELECT /* {comment} */ * FROM foo`,
-			opts:  []namedOption{Variables("comment", "foobarbaz")},
+			opts:  []NamedOption{Variables("comment", "foobarbaz")},
 			mySQL: `SELECT /* foobarbaz */ * FROM foo`,
 			pgSQL: `SELECT /* foobarbaz */ * FROM foo`,
 			args:  []interface{}{},
 		},
 		{
 			src:   `SELECT /* {comment} */ * FROM foo WHERE foo=:foo`,
-			opts:  []namedOption{Variables("comment", "foobarbaz")},
+			opts:  []NamedOption{Variables("comment", "foobarbaz")},
 			mySQL: `SELECT /* foobarbaz */ * FROM foo WHERE foo=?`,
 			pgSQL: `SELECT /* foobarbaz */ * FROM foo WHERE foo=$1`,
 			args:  []interface{}{"foobar"},
 		},
 		{
 			src:   `{comment}`,
-			opts:  []namedOption{Variables("comment", "foobarbaz")},
+			opts:  []NamedOption{Variables("comment", "foobarbaz")},
 			mySQL: `foobarbaz`,
 			pgSQL: `foobarbaz`,
 			args:  []interface{}{},
 		},
 		{
 			src:   `SELECT * FROM foo where comment="{comment}"`,
-			opts:  []namedOption{Variables("comment", "foobarbaz")},
+			opts:  []NamedOption{Variables("comment", "foobarbaz")},
 			mySQL: `SELECT * FROM foo where comment="{comment}"`,
 			pgSQL: `SELECT * FROM foo where comment="{comment}"`,
 			args:  []interface{}{},
@@ -119,14 +119,14 @@ func TestNamed(t *testing.T) {
 		},
 		{
 			src:   `INSERT INTO example (::names) VALUES(::values)`,
-			opts:  []namedOption{Only("bar")},
+			opts:  []NamedOption{Only("bar")},
 			mySQL: `INSERT INTO example (bar) VALUES(?)`,
 			pgSQL: `INSERT INTO example (bar) VALUES($1)`,
 			args:  []interface{}{"barbar"},
 		},
 		{
 			src:   `INSERT INTO example (::names) VALUES(::values)`,
-			opts:  []namedOption{Exclude("bar")},
+			opts:  []NamedOption{Exclude("bar")},
 			mySQL: `INSERT INTO example (foo, int, nil) VALUES(?, ?, ?)`,
 			pgSQL: `INSERT INTO example (foo, int, nil) VALUES($1, $2, $3)`,
 			args:  []interface{}{"foobar", 42, nil},

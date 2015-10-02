@@ -47,7 +47,7 @@ type context struct {
 	names []string
 }
 
-type namedOption func(*context) error
+type NamedOption func(*context) error
 
 // Named formats a SQL query, parsing named parameters and variables using the default binder.
 // It returns the SQL query and the list of parameters to be used for the database/sql call
@@ -56,7 +56,7 @@ type namedOption func(*context) error
 //   rows, err := db.Query(sql, sqlargs...)
 //
 // args can either be a map[string]interface{} or a struct
-func Named(sql string, args interface{}, opts ...namedOption) (string, []interface{}, error) {
+func Named(sql string, args interface{}, opts ...NamedOption) (string, []interface{}, error) {
 	return defaultBinder.Named(sql, args, opts...)
 }
 
@@ -67,7 +67,7 @@ func Named(sql string, args interface{}, opts ...namedOption) (string, []interfa
 //   rows, err := db.Query(sql, sqlargs...)
 //
 // args can either be a map[string]interface{} or a struct
-func (s *SQLBinder) Named(sql string, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
+func (s *SQLBinder) Named(sql string, arg interface{}, opts ...NamedOption) (string, []interface{}, error) {
 	var c *decoded
 	var found bool
 	s.Lock()
@@ -83,7 +83,7 @@ func (s *SQLBinder) Named(sql string, arg interface{}, opts ...namedOption) (str
 // Variables sets variable values. If a variable has no value, it is replaced with an empty string.
 //
 //   sqlbin.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE foo=:foo", args, sqlbind.Variables("comment", "foobar", "table_prefix", "foo_"))
-func Variables(vars ...string) namedOption {
+func Variables(vars ...string) NamedOption {
 	if len(vars) != 2 {
 		return errorOption(errors.New("Variables must have a multiple of 2 args"))
 	}
@@ -115,7 +115,7 @@ func Variables(vars ...string) namedOption {
 // would be equivalent to :
 //
 //  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", args)
-func Only(names ...string) namedOption {
+func Only(names ...string) NamedOption {
 	return func(e *context) error {
 		e.names = names
 		return nil
@@ -129,7 +129,7 @@ func Only(names ...string) namedOption {
 // would be equivalent to :
 //
 //  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", args)
-func Exclude(names ...string) namedOption {
+func Exclude(names ...string) NamedOption {
 	ex := map[string]struct{}{}
 	for _, name := range names {
 		ex[name] = struct{}{}
@@ -147,7 +147,7 @@ func Exclude(names ...string) namedOption {
 	}
 }
 
-func errorOption(err error) namedOption {
+func errorOption(err error) NamedOption {
 	return func(e *context) error {
 		return err
 	}
@@ -203,7 +203,7 @@ func newBuf() *bytes.Buffer {
 	return &bytes.Buffer{}
 }
 
-func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
+func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (string, []interface{}, error) {
 	e := &context{
 		names: names(arg),
 		parts: c.parts,

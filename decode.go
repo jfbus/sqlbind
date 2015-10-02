@@ -17,7 +17,7 @@ type part struct {
 	data string
 }
 
-type compiled struct {
+type decoded struct {
 	parts []part
 }
 
@@ -27,8 +27,8 @@ type decodeState struct {
 	err  error
 }
 
-func compile(str string) *compiled {
-	c := &compiled{parts: []part{}}
+func decode(str string) *decoded {
+	c := &decoded{parts: []part{}}
 	d := newDecodeState()
 	cur := typeSQL
 	start := 0

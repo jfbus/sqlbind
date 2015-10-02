@@ -3,6 +3,8 @@ package sqlbind
 import (
 	"reflect"
 	"testing"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type testCase struct {
@@ -286,4 +288,40 @@ func TestNoTag(t *testing.T) {
 		Foo: "foobar",
 		Bar: "barbar",
 	}, tc, "struct/notag")
+}
+
+func BenchmarkSQLBindNamedNoRegister(b *testing.B) {
+	type testStruct struct {
+		Foo string `sqlbind:"foo"`
+		Bar string `sqlbind:"bar"`
+		Baz int    `sqlbind:"baz"`
+	}
+
+	for i := 0; i < b.N; i++ {
+		Named("SELECT * FROM foo WHERE foo=:foo AND bar=:bar AND baz=:baz", testStruct{Foo: "foo", Bar: "bar", Baz: 42})
+	}
+}
+
+func BenchmarkSQLBindNamed(b *testing.B) {
+	type testStruct struct {
+		Foo string `sqlbind:"foo"`
+		Bar string `sqlbind:"bar"`
+		Baz int    `sqlbind:"baz"`
+	}
+	Register(testStruct{})
+	for i := 0; i < b.N; i++ {
+		Named("SELECT * FROM foo WHERE foo=:foo AND bar=:bar AND baz=:baz", testStruct{Foo: "foo", Bar: "bar", Baz: 42})
+	}
+}
+
+func BenchmarkSqlxNamed(b *testing.B) {
+	type testStruct struct {
+		Foo string `db:"foo"`
+		Bar string `db:"bar"`
+		Baz int    `db:"baz"`
+	}
+
+	for i := 0; i < b.N; i++ {
+		sqlx.Named("SELECT * FROM foo WHERE foo=:foo AND bar=:bar AND baz=:baz", testStruct{Foo: "foo", Bar: "bar", Baz: 42})
+	}
 }

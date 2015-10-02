@@ -1,6 +1,7 @@
 package sqlbind
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"strconv"
@@ -25,14 +26,14 @@ type SQLBinder struct {
 	style Style
 
 	sync.Mutex
-	cache map[string]*compiled
+	cache map[string]*decoded
 }
 
 // New creates a SQLBinder object, using the specified placeholder style
 func New(style Style) *SQLBinder {
 	return &SQLBinder{
 		style: style,
-		cache: map[string]*compiled{},
+		cache: map[string]*decoded{},
 	}
 }
 
@@ -67,11 +68,11 @@ func Named(sql string, args interface{}, opts ...namedOption) (string, []interfa
 //
 // args can either be a map[string]interface{} or a struct
 func (s *SQLBinder) Named(sql string, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
-	var c *compiled
+	var c *decoded
 	var found bool
 	s.Lock()
 	if c, found = s.cache[sql]; !found {
-		c = compile(sql)
+		c = decode(sql)
 		// TODO : test compilation error
 		s.cache[sql] = c
 	}
@@ -154,8 +155,12 @@ func errorOption(err error) namedOption {
 
 // replaceNamesValues replaces ::names, ::values and ::name=::value parts with placeholders
 func replaceNamesValues(e *context) error {
-	n := make([]part, 0, len(e.parts))
-	for _, p := range e.parts {
+	var n []part
+	for i, p := range e.parts {
+		if n == nil && (p.t == typeNames || p.t == typeValues || p.t == typeNameValue) {
+			n = make([]part, i, len(e.parts)+len(e.names)*2)
+			copy(n, e.parts)
+		}
 		switch p.t {
 		case typeNames:
 			n = append(n, part{t: typeSQL, data: strings.Join(e.names, ", ")})
@@ -176,14 +181,29 @@ func replaceNamesValues(e *context) error {
 				n = append(n, part{t: typePlaceholder, data: name})
 			}
 		default:
-			n = append(n, p)
+			if n != nil {
+				n = append(n, p)
+			}
 		}
 	}
-	e.parts = n
+	if n != nil {
+		e.parts = n
+	}
 	return nil
 }
 
-func (s *SQLBinder) named(c *compiled, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
+var bufPool sync.Pool
+
+func newBuf() *bytes.Buffer {
+	if v := bufPool.Get(); v != nil {
+		buf := v.(*bytes.Buffer)
+		buf.Reset()
+		return buf
+	}
+	return &bytes.Buffer{}
+}
+
+func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...namedOption) (string, []interface{}, error) {
 	e := &context{
 		names: names(arg),
 		parts: c.parts,
@@ -196,26 +216,27 @@ func (s *SQLBinder) named(c *compiled, arg interface{}, opts ...namedOption) (st
 	}
 	replaceNamesValues(e)
 
-	args := []interface{}{}
-	sql := ""
+	args := make([]interface{}, 0, len(e.names))
+	sql := newBuf()
+	defer bufPool.Put(sql)
 	i := 1
 	for _, p := range e.parts {
 		switch p.t {
 		case typeSQL:
-			sql += p.data
+			sql.WriteString(p.data)
 		case typePlaceholder:
 			val := value(arg, p.data)
 			if rval := reflect.ValueOf(val); rval.Kind() == reflect.Slice {
 				for si := 0; si < rval.Len(); si++ {
 					if si != 0 {
-						sql += ", "
+						sql.WriteString(", ")
 					}
-					sql += s.placeholder(i)
+					s.writePlaceholder(sql, i)
 					i++
 					args = append(args, rval.Index(si).Interface())
 				}
 			} else {
-				sql += s.placeholder(i)
+				s.writePlaceholder(sql, i)
 				i++
 				args = append(args, val)
 			}
@@ -223,14 +244,15 @@ func (s *SQLBinder) named(c *compiled, arg interface{}, opts ...namedOption) (st
 			return "", nil, errors.New("Unhandled part type")
 		}
 	}
-	return sql, args, nil
+	return sql.String(), args, nil
 }
 
-func (s *SQLBinder) placeholder(i int) string {
+func (s *SQLBinder) writePlaceholder(buf *bytes.Buffer, i int) {
 	switch s.style {
 	case Postgresql:
-		return "$" + strconv.Itoa(i)
+		buf.WriteByte('$')
+		buf.WriteString(strconv.Itoa(i))
 	default:
-		return "?"
+		buf.WriteByte('?')
 	}
 }

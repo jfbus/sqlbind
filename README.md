@@ -56,10 +56,10 @@ This can be achieved using an optional parameter to `sqlbin.Named` :
 sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Only("name"))
 sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]interface{}{"id": 42, "name":"foo"}'}, sqlbind.Exclude("id"))
 ```
-or using struct tags :
+or using struct tags (better performance) :
 ```
 type Example struct {
-	ID   int    `sqlbind:"id,omit"` // will not be expanded by ::names and ::name=::value
+	ID   int    `db:"id,omit"` // will not be expanded by ::names and ::name=::value
 }
 ```
 
@@ -72,7 +72,7 @@ sqlbind.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE name=:n
 
 Braces inside quotes are ignored : `"{value}"` will not be modified.
 
-## JSON and missing fields
+## JSON and missing fields [TODO]
 
 In a REST API, `PATCH` update calls may update only certain fields. When using structs with plain types, it is impossible to differentiate between empty fields `{"name":""}`, null fields : `{"name": null}` and missing fields : `{}`.
 
@@ -80,7 +80,7 @@ In a REST API, `PATCH` update calls may update only certain fields. When using s
 
 ```
 type Example struct {
-	Name *string `sqlbind:"name"`
+	Name *string `db:"name"`
 }
 ```
 
@@ -94,7 +94,7 @@ sqlbind will never expand nil pointer values in `::names` and `::name=::value`.
 
 ```
 type Example struct {
-	Name jsontypes.NullString `sqlbind:"name"`
+	Name jsontypes.NullString `db:"name"`
 }
 ```
 
@@ -134,6 +134,13 @@ sqlbind uses reflection to parse structs. In order to achieve the best performan
 sqlbind.Register(Example{}, Foo{})
 ```
 
+Benchmark against [sqlx](https://github.com/jmoiron/sqlx):
+
+```
+BenchmarkSQLBindNamed-4          	 1000000	      1370 ns/op	     208 B/op	       4 allocs/op
+BenchmarkSqlxNamed-4             	  500000	      2414 ns/op	     624 B/op	      13 allocs/op
+```
+
 ## Instances
 
 You can build a SQLBinder instance :
@@ -142,8 +149,3 @@ s := sqlbind.New(sqlbind.MySQL)
 s.Register(Example{}, Foo{})
 s.Named("SELECT * FROM example WHERE name=:name", e)
 ```
-
-## TODO
-
-* Binding
-* Performance

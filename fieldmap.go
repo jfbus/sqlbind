@@ -96,7 +96,7 @@ func buildNames(t reflect.Type) []string {
 		if tag == "-" {
 			continue
 		}
-		if f.Type.Kind() == reflect.Struct {
+		if tag == "" && f.Type.Kind() == reflect.Struct {
 			add := buildNames(f.Type)
 			names = append(names, add...)
 		} else {
@@ -126,7 +126,7 @@ func buildIndexes(t reflect.Type, idx []int, m map[string][]int) {
 		copy(nidx, idx)
 		nidx = append(nidx, i)
 
-		if f.Type.Kind() == reflect.Struct {
+		if tag == "" && f.Type.Kind() == reflect.Struct {
 			buildIndexes(f.Type, nidx, m)
 		} else {
 			name, _ := parseTag(tag)

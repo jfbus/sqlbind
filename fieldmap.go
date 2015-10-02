@@ -17,6 +17,7 @@ var (
 	}
 
 	ErrNoPointerToField = errors.New("Cannot get pointer to field")
+	ErrFieldNotFound    = errors.New("Field not found")
 )
 
 // Register is not safe. Do not use concurently.
@@ -72,7 +73,7 @@ func pointerto(arg interface{}, key string) (interface{}, error) {
 			return fv.Addr().Interface(), nil
 		}
 	}
-	return nil, ErrUnsupportedFormat
+	return nil, ErrFieldNotFound
 }
 
 func field(v reflect.Value, key string) (reflect.Value, bool) {

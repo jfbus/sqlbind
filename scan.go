@@ -13,10 +13,14 @@ func Scan(rows *sql.Rows, arg interface{}) error {
 	vals := make([]interface{}, len(names))
 	for i, name := range names {
 		ptr, err := pointerto(arg, name)
-		if err != nil {
+		if err != nil && err != ErrFieldNotFound {
 			return err
 		}
-		vals[i] = ptr
+		if ptr == nil {
+			vals[i] = &sql.RawBytes{}
+		} else {
+			vals[i] = ptr
+		}
 	}
 	return rows.Scan(vals...)
 }
@@ -29,17 +33,5 @@ func ScanRow(rows *sql.Rows, arg interface{}) error {
 	if !rows.Next() {
 		return sql.ErrNoRows
 	}
-	names, err := rows.Columns()
-	if err != nil {
-		return err
-	}
-	vals := make([]interface{}, len(names))
-	for i, name := range names {
-		ptr, err := pointerto(arg, name)
-		if err != nil {
-			return err
-		}
-		vals[i] = ptr
-	}
-	return rows.Scan(vals...)
+	return Scan(rows, arg)
 }

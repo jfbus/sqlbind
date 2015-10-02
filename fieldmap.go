@@ -91,7 +91,7 @@ func buildNames(t reflect.Type) []string {
 	names := make(sort.StringSlice, 0, t.NumField())
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		tag := f.Tag.Get("sqlbind")
+		tag := f.Tag.Get("db")
 		if tag == "-" {
 			continue
 		}
@@ -116,7 +116,7 @@ func buildNames(t reflect.Type) []string {
 func buildIndexes(t reflect.Type, idx []int, m map[string][]int) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		tag := f.Tag.Get("sqlbind")
+		tag := f.Tag.Get("db")
 		if tag == "-" {
 			continue
 		}

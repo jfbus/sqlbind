@@ -23,10 +23,10 @@ func TestScan(t *testing.T) {
 	rows, _ := db.Query("SELECT foo FROM bar")
 
 	type testStruct struct {
-		Id  int    `sqlbind:"-"`
-		Foo string `sqlbind:"foo"`
-		Baz int    `sqlbind:"baz"`
-		Bar string `sqlbind:"bar"`
+		Id  int    `db:"-"`
+		Foo string `db:"foo"`
+		Baz int    `db:"baz"`
+		Bar string `db:"bar"`
 	}
 	ts := testStruct{}
 	rows.Next()
@@ -56,10 +56,10 @@ func TestScanRow(t *testing.T) {
 	rows, _ := db.Query("SELECT foo FROM bar")
 
 	type testStruct struct {
-		Id  int    `sqlbind:"-"`
-		Foo string `sqlbind:"foo"`
-		Baz int    `sqlbind:"baz"`
-		Bar string `sqlbind:"bar"`
+		Id  int    `db:"-"`
+		Foo string `db:"foo"`
+		Baz int    `db:"baz"`
+		Bar string `db:"bar"`
 	}
 	ts := testStruct{}
 	err := ScanRow(rows, &ts)

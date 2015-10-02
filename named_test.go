@@ -153,11 +153,11 @@ func TestNamed(t *testing.T) {
 	}, tc, "map")
 
 	type testStruct struct {
-		Id  int         `sqlbind:"-"`
-		Foo string      `sqlbind:"foo"`
-		Bar string      `sqlbind:"bar"`
-		Int int         `sqlbind:"int"`
-		Nil interface{} `sqlbind:"nil"`
+		Id  int         `db:"-"`
+		Foo string      `db:"foo"`
+		Bar string      `db:"bar"`
+		Int int         `db:"int"`
+		Nil interface{} `db:"nil"`
 	}
 	doTest(t, testStruct{
 		Foo: "foobar",
@@ -181,17 +181,17 @@ func TestNamed(t *testing.T) {
 	}, tc, "registered")
 
 	type e struct {
-		Id  int    `sqlbind:"-"`
-		Foo string `sqlbind:"foo"`
+		Id  int    `db:"-"`
+		Foo string `db:"foo"`
 	}
 	type f struct {
-		Int int `sqlbind:"int"`
+		Int int `db:"int"`
 	}
 	type testStructEmbed struct {
 		E   e
-		Bar string `sqlbind:"bar"`
+		Bar string `db:"bar"`
 		F   f
-		Nil interface{} `sqlbind:"nil"`
+		Nil interface{} `db:"nil"`
 	}
 	doTest(t, testStructEmbed{
 		E: e{
@@ -225,8 +225,8 @@ func TestNamedIn(t *testing.T) {
 		"bar": []string{"barbar", "barbaz"},
 	}, tc, "map/in")
 	type testStructIn struct {
-		Foo string   `sqlbind:"foo"`
-		Bar []string `sqlbind:"bar"`
+		Foo string   `db:"foo"`
+		Bar []string `db:"bar"`
 	}
 	doTest(t, testStructIn{
 		Foo: "foobar",
@@ -250,8 +250,8 @@ func TestOmit(t *testing.T) {
 		},
 	}
 	type testStructOmit struct {
-		Foo string `sqlbind:"foo"`
-		Bar string `sqlbind:"bar,omit"`
+		Foo string `db:"foo"`
+		Bar string `db:"bar,omit"`
 	}
 	doTest(t, testStructOmit{
 		Foo: "foobar",
@@ -292,9 +292,9 @@ func TestNoTag(t *testing.T) {
 
 func BenchmarkSQLBindNamedNoRegister(b *testing.B) {
 	type testStruct struct {
-		Foo string `sqlbind:"foo"`
-		Bar string `sqlbind:"bar"`
-		Baz int    `sqlbind:"baz"`
+		Foo string `db:"foo"`
+		Bar string `db:"bar"`
+		Baz int    `db:"baz"`
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -304,9 +304,9 @@ func BenchmarkSQLBindNamedNoRegister(b *testing.B) {
 
 func BenchmarkSQLBindNamed(b *testing.B) {
 	type testStruct struct {
-		Foo string `sqlbind:"foo"`
-		Bar string `sqlbind:"bar"`
-		Baz int    `sqlbind:"baz"`
+		Foo string `db:"foo"`
+		Bar string `db:"bar"`
+		Baz int    `db:"baz"`
 	}
 	Register(testStruct{})
 	for i := 0; i < b.N; i++ {

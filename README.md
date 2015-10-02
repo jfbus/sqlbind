@@ -1,4 +1,4 @@
-# sqlbind
+# sqlbind [![Build Status](https://travis-ci.org/jfbus/sqlbind.svg)](https://travis-ci.org/jfbus/sqlbind)
 
 sqlbind is a set of `database/sql` helpers to remove a lot of boilerplate code while always using standard `database/sql` calls.
 

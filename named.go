@@ -84,8 +84,8 @@ func (s *SQLBinder) Named(sql string, arg interface{}, opts ...NamedOption) (str
 //
 //   sqlbin.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE foo=:foo", args, sqlbind.Variables("comment", "foobar", "table_prefix", "foo_"))
 func Variables(vars ...string) NamedOption {
-	if len(vars) != 2 {
-		return errorOption(errors.New("Variables must have a multiple of 2 args"))
+	if len(vars)%2 != 0 {
+		return errorOption(errors.New("Variables() must have a multiple of 2 args"))
 	}
 	v := map[string]string{}
 	for i := 0; i < len(vars); i += 2 {

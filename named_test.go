@@ -290,6 +290,17 @@ func TestNoTag(t *testing.T) {
 	}, tc, "struct/notag")
 }
 
+func TestErrors(t *testing.T) {
+	_, _, err := Named("{var}", map[string]interface{}{}, Variables("var"))
+	if err == nil {
+		t.Error("Variables() called with 1 parameter should return an error, but got none")
+	}
+	_, _, err = Named("foo", nil)
+	if err != nil {
+		t.Error("Calling Named with a nil arg should not generate an error, but got %s", err)
+	}
+}
+
 func BenchmarkSQLBindNamedNoRegister(b *testing.B) {
 	type testStruct struct {
 		Foo string `db:"foo"`

@@ -34,6 +34,9 @@ func Register(l ...interface{}) {
 }
 
 func names(arg interface{}) []string {
+	if arg == nil {
+		return []string{}
+	}
 	if m, ok := arg.(map[string]interface{}); ok {
 		names := make(sort.StringSlice, 0, len(m))
 		for name := range m {

@@ -44,8 +44,6 @@
 //
 // JSON and missing fields
 //
-// [Not yet implemented]
-//
 // In a REST API, PATCH update calls may update only certain fields. When using structs with plain types, it is impossible to differentiate between empty fields {"name":""}, null fields : {"name": null} and missing fields : {}.
 //
 // Using pointers, one can differentiate between empty fields and null/missing fields, but not between null and missing fields. In this case, nil values are usually considered missing.
@@ -65,6 +63,8 @@
 // * jsontypes.String will either be expanded to "" ("" or null in JSON) or not expanded (absent from JSON)
 //
 // * jsontypes.ROString will never be expanded
+//
+// More generally, all struct that implement `WillUpdate() bool` will be managed by sqlbind.
 //
 // Result struct binding
 //

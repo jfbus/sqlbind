@@ -290,6 +290,89 @@ func TestNoTag(t *testing.T) {
 	}, tc, "struct/notag")
 }
 
+type Missing bool
+
+func (m Missing) WillUpdate() bool {
+	return !bool(m)
+}
+
+func TestMissing(t *testing.T) {
+	type testStructMissing struct {
+		Foo Missing
+		Bar *string
+		Baz string
+	}
+	barbar := "barbar"
+	tt := testStructMissing{
+		Foo: false,
+		Bar: &barbar,
+		Baz: "bazbar",
+	}
+	doTest(t, tt, []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (Bar, Baz, Foo) VALUES(?, ?, ?)`,
+			pgSQL: `INSERT INTO example (Bar, Baz, Foo) VALUES($1, $2, $3)`,
+			args:  []interface{}{tt.Bar, "bazbar", Missing(false)},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value`,
+			mySQL: `UPDATE example SET Bar=?, Baz=?, Foo=?`,
+			pgSQL: `UPDATE example SET Bar=$1, Baz=$2, Foo=$3`,
+			args:  []interface{}{tt.Bar, "bazbar", Missing(false)},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{Missing(false), tt.Bar},
+		},
+	}, "struct/missing/none")
+	tt.Foo = true
+	doTest(t, tt, []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (Bar, Baz) VALUES(?, ?)`,
+			pgSQL: `INSERT INTO example (Bar, Baz) VALUES($1, $2)`,
+			args:  []interface{}{tt.Bar, "bazbar"},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value`,
+			mySQL: `UPDATE example SET Bar=?, Baz=?`,
+			pgSQL: `UPDATE example SET Bar=$1, Baz=$2`,
+			args:  []interface{}{tt.Bar, "bazbar"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{Missing(true), tt.Bar},
+		},
+	}, "struct/missing/struct")
+	tt.Foo = false
+	tt.Bar = nil
+	doTest(t, tt, []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (Baz, Foo) VALUES(?, ?)`,
+			pgSQL: `INSERT INTO example (Baz, Foo) VALUES($1, $2)`,
+			args:  []interface{}{"bazbar", Missing(false)},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value`,
+			mySQL: `UPDATE example SET Baz=?, Foo=?`,
+			pgSQL: `UPDATE example SET Baz=$1, Foo=$2`,
+			args:  []interface{}{"bazbar", Missing(false)},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{Missing(false), tt.Bar},
+		},
+	}, "struct/missing/ptr")
+}
+
 func TestErrors(t *testing.T) {
 	_, _, err := Named("{var}", map[string]interface{}{}, Variables("var"))
 	if err == nil {

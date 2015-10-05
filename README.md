@@ -72,7 +72,7 @@ sqlbind.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE name=:n
 
 Braces inside quotes are ignored : `"{value}"` will not be modified.
 
-## JSON and missing fields [TODO]
+## JSON and missing fields
 
 In a REST API, `PATCH` update calls may update only certain fields. When using structs with plain types, it is impossible to differentiate between empty fields `{"name":""}`, null fields : `{"name": null}` and missing fields : `{}`.
 

@@ -46,11 +46,33 @@ func names(arg interface{}) []string {
 		return []string(names)
 	} else if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
 		if names, found := fieldMap.names[v.Type()]; found {
-			return names
+			return filterMissing(names, v)
 		}
-		return buildNames(v.Type())
+		return filterMissing(buildNames(v.Type()), v)
 	}
 	return []string{}
+}
+
+type WillUpdater interface {
+	WillUpdate() bool
+}
+
+func filterMissing(names []string, v reflect.Value) []string {
+	n := make([]string, 0, len(names))
+	for _, name := range names {
+		fv, ok := field(v, name)
+		if !ok {
+			continue
+		}
+		if i, ok := fv.Interface().(WillUpdater); ok && i.WillUpdate() == false {
+			continue
+		}
+		if fv.Kind() == reflect.Ptr && fv.IsNil() {
+			continue
+		}
+		n = append(n, name)
+	}
+	return n
 }
 
 // TODO : remove missing fields from names

@@ -149,3 +149,7 @@ s := sqlbind.New(sqlbind.MySQL)
 s.Register(Example{}, Foo{})
 s.Named("SELECT * FROM example WHERE name=:name", e)
 ```
+
+## License
+
+License: MIT - see LICENSE

@@ -143,8 +143,8 @@ sqlbind.Register(Example{}, Foo{})
 Benchmark against [sqlx](https://github.com/jmoiron/sqlx):
 
 ```
-BenchmarkSQLBindNamed-4          	 1000000	      1883 ns/op	     256 B/op	       5 allocs/op
-BenchmarkSqlxNamed-4             	  500000	      2825 ns/op	     624 B/op	      13 allocs/op
+BenchmarkSQLBindNamedRegister-4  	 1000000	      1922 ns/op	     272 B/op	       5 allocs/op
+BenchmarkSqlxNamed-4             	  500000	      2298 ns/op	     624 B/op	      13 allocs/op
 ```
 
 ## Instances

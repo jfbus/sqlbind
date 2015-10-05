@@ -1,10 +1,6 @@
 package sqlbind
 
-import (
-	"database/sql"
-	"fmt"
-	"reflect"
-)
+import "database/sql"
 
 // Scan maps the columns of the current row of a sql.Rows result to a struct
 //
@@ -29,7 +25,7 @@ func Scan(rows *sql.Rows, arg interface{}) error {
 	}
 	vals := make([]interface{}, len(names))
 	for i, name := range names {
-		ptr, err := pointerto(arg, name)
+		ptr, err := pointerto(name, arg)
 		if err != nil && err != ErrFieldNotFound {
 			return err
 		}
@@ -39,7 +35,6 @@ func Scan(rows *sql.Rows, arg interface{}) error {
 			vals[i] = ptr
 		}
 	}
-	fmt.Printf("%+v, %+v\n", names, reflect.ValueOf(arg).Type())
 	return rows.Scan(vals...)
 }
 

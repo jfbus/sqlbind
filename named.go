@@ -3,6 +3,7 @@ package sqlbind
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -43,8 +44,10 @@ func SetStyle(style Style) {
 }
 
 type context struct {
-	parts []part
-	names []string
+	parts   []part
+	names   []string
+	decoded *decoded
+	args    map[string]interface{}
 }
 
 type NamedOption func(*context) error
@@ -52,7 +55,7 @@ type NamedOption func(*context) error
 // Named formats a SQL query, parsing named parameters and variables using the default binder.
 // It returns the SQL query and the list of parameters to be used for the database/sql call
 //
-//   sql, args, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", arg)
+//   sql, args, err := sqlbind.Named("SELECT * FROM example WHERE foo=:foo", arg)
 //   rows, err := db.Query(sql, args...)
 //
 // args can either be a map[string]interface{} or a struct
@@ -63,7 +66,7 @@ func Named(sql string, arg interface{}, opts ...NamedOption) (string, []interfac
 // Named formats a SQL query, parsing named parameters and variables using the specified binder
 // It returns the SQL query and the list of parameters to be used for the database/sql call
 //
-//   sql, args, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", arg)
+//   sql, args, err := sqlbind.Named("SELECT * FROM example WHERE foo=:foo", arg)
 //   rows, err := db.Query(sql, args...)
 //
 // args can either be a map[string]interface{} or a struct
@@ -82,7 +85,7 @@ func (s *SQLBinder) Named(sql string, arg interface{}, opts ...NamedOption) (str
 
 // Variables sets variable values. If a variable has no value, it is replaced with an empty string.
 //
-//   sqlbin.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE foo=:foo", args, sqlbind.Variables("comment", "foobar", "table_prefix", "foo_"))
+//   sqlbind.Named("SELECT /* {comment} */ * FROM {table_prefix}example WHERE foo=:foo", args, sqlbind.Variables("comment", "foobar", "table_prefix", "foo_"))
 func Variables(vars ...string) NamedOption {
 	if len(vars)%2 != 0 {
 		return errorOption(errors.New("Variables() must have a multiple of 2 args"))
@@ -93,6 +96,9 @@ func Variables(vars ...string) NamedOption {
 	}
 
 	return func(e *context) error {
+		if !e.decoded.hasType(typeVariable) {
+			return nil
+		}
 		n := make([]part, 0, len(e.parts))
 		for _, p := range e.parts {
 			if p.t == typeVariable {
@@ -115,11 +121,11 @@ func Variables(vars ...string) NamedOption {
 // 		Bar string `db:"bar"`
 // 		Baz string `db:"baz"`
 // 	}
-//  sqlbin.Named("UPDATE example SET ::name=::value", arg, sqlbind.Only("bar", "baz"))
+//  sqlbind.Named("UPDATE example SET ::name=::value", arg, sqlbind.Only("bar", "baz"))
 //
 // would be equivalent to :
 //
-//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz", args)
+//  sqlbind.Named("UPDATE example SET bar=:bar, baz=:baz", arg)
 func Only(names ...string) NamedOption {
 	return func(e *context) error {
 		e.names = names
@@ -134,11 +140,11 @@ func Only(names ...string) NamedOption {
 // 		Bar string `db:"bar"`
 // 		Baz string `db:"baz"`
 // 	}
-//  sqlbin.Named("UPDATE example SET ::name=::value", arg, sqlbind.Exclude("foo"))
+//  sqlbind.Named("UPDATE example SET ::name=::value", arg, sqlbind.Exclude("foo"))
 //
 // would be equivalent to :
 //
-//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz", args)
+//  sqlbind.Named("UPDATE example SET bar=:bar, baz=:baz", arg)
 func Exclude(names ...string) NamedOption {
 	ex := map[string]struct{}{}
 	for _, name := range names {
@@ -157,6 +163,32 @@ func Exclude(names ...string) NamedOption {
 	}
 }
 
+// Args adds additional args to be used as named parameters.
+//
+// 	var e struct {
+// 		Bar string `db:"bar"`
+// 		Baz string `db:"baz"`
+// 	}
+//  sqlbind.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", arg, sqlbind.Args("foo", "foobar", "foobar", 42))
+func Args(args ...interface{}) NamedOption {
+	if len(args)%2 != 0 {
+		return errorOption(errors.New("Args() must have a multiple of 2 args"))
+	}
+	return func(e *context) error {
+		if e.args == nil {
+			e.args = map[string]interface{}{}
+		}
+		for i := 0; i < len(args); i += 2 {
+			if name, ok := args[i].(string); ok {
+				e.args[name] = args[i+1]
+			} else {
+				return fmt.Errorf("Args() keys must be string, not %#v", args[i+1])
+			}
+		}
+		return nil
+	}
+}
+
 func errorOption(err error) NamedOption {
 	return func(e *context) error {
 		return err
@@ -165,12 +197,11 @@ func errorOption(err error) NamedOption {
 
 // replaceNamesValues replaces ::names, ::values and ::name=::value parts with placeholders
 func replaceNamesValues(e *context) error {
-	var n []part
-	for i, p := range e.parts {
-		if n == nil && (p.t == typeNames || p.t == typeValues || p.t == typeNameValue) {
-			n = make([]part, i, len(e.parts)+len(e.names)*2)
-			copy(n, e.parts)
-		}
+	if !e.decoded.hasType(typeNames) && !e.decoded.hasType(typeValues) && !e.decoded.hasType(typeNameValue) {
+		return nil
+	}
+	n := make([]part, 0, len(e.parts)+len(e.names)*2)
+	for _, p := range e.parts {
 		switch p.t {
 		case typeNames:
 			n = append(n, part{t: typeSQL, data: strings.Join(e.names, ", ")})
@@ -191,14 +222,10 @@ func replaceNamesValues(e *context) error {
 				n = append(n, part{t: typePlaceholder, data: name})
 			}
 		default:
-			if n != nil {
-				n = append(n, p)
-			}
+			n = append(n, p)
 		}
 	}
-	if n != nil {
-		e.parts = n
-	}
+	e.parts = n
 	return nil
 }
 
@@ -215,8 +242,9 @@ func newBuf() *bytes.Buffer {
 
 func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (string, []interface{}, error) {
 	e := &context{
-		names: names(arg),
-		parts: c.parts,
+		names:   names(arg),
+		decoded: c,
+		parts:   c.parts,
 	}
 
 	for _, opt := range opts {
@@ -235,7 +263,7 @@ func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (str
 		case typeSQL:
 			sql.WriteString(p.data)
 		case typePlaceholder:
-			val := value(arg, p.data)
+			val := value(p.data, arg, e.args)
 			if rval := reflect.ValueOf(val); rval.Kind() == reflect.Slice {
 				for si := 0; si < rval.Len(); si++ {
 					if si != 0 {

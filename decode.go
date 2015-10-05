@@ -19,6 +19,12 @@ type part struct {
 
 type decoded struct {
 	parts []part
+	types map[int]struct{}
+}
+
+func (d *decoded) hasType(t int) bool {
+	_, ok := d.types[t]
+	return ok
 }
 
 type decodeState struct {
@@ -28,13 +34,14 @@ type decodeState struct {
 }
 
 func decode(str string) *decoded {
-	c := &decoded{parts: []part{}}
+	c := &decoded{parts: []part{}, types: map[int]struct{}{}}
 	d := newDecodeState()
 	cur := typeSQL
 	start := 0
 	for i := range str {
 		next := d.step(d, str[i:])
 		if next != cur && cur != typeSeparator && i > 0 {
+			c.types[cur] = struct{}{}
 			c.parts = append(c.parts, part{t: cur, data: str[start:i]})
 			start = i
 		}
@@ -44,6 +51,7 @@ func decode(str string) *decoded {
 		cur = next
 	}
 	if len(str) > start && cur != typeSeparator {
+		c.types[cur] = struct{}{}
 		c.parts = append(c.parts, part{t: cur, data: str[start:]})
 	}
 	return c

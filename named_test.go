@@ -84,6 +84,13 @@ func TestNamed(t *testing.T) {
 			args:  []interface{}{"foobar"},
 		},
 		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND foofoo=:foofoo`,
+			opts:  []NamedOption{Args("foofoo", "foofoobar")},
+			mySQL: `SELECT * FROM foo WHERE foo=? AND foofoo=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND foofoo=$2`,
+			args:  []interface{}{"foobar", "foofoobar"},
+		},
+		{
 			src:   `SELECT /* {comment} */ * FROM foo`,
 			opts:  []NamedOption{Variables("comment", "foobarbaz")},
 			mySQL: `SELECT /* foobarbaz */ * FROM foo`,
@@ -396,7 +403,7 @@ func BenchmarkSQLBindNamedNoRegister(b *testing.B) {
 	}
 }
 
-func BenchmarkSQLBindNamed(b *testing.B) {
+func BenchmarkSQLBindNamedRegister(b *testing.B) {
 	type testStruct struct {
 		Foo string `db:"foo"`
 		Bar string `db:"bar"`

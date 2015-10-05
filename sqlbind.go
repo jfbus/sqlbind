@@ -20,6 +20,9 @@
 //   e := Example{Name: "foo"}
 //   sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
 //
+// Add args to a struct (e.g. from query string parameters) :
+//   sqlbind.Named("SELECT * FROM example WHERE name=:name AND domain=:domain", e, sqlbind.Args("domain", "example.com"))
+//
 // Named placeholders are automatically translated to the right driver-dependant placeholder : ? for MySQL (default style)
 //   sqlbind.SetStyle(sqlbind.MySQL)
 // or $N for PostgreSQL

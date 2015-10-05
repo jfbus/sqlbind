@@ -60,7 +60,7 @@ type WillUpdater interface {
 func filterMissing(names []string, v reflect.Value) []string {
 	n := make([]string, 0, len(names))
 	for _, name := range names {
-		fv, ok := field(v, name)
+		fv, ok := field(name, v)
 		if !ok {
 			continue
 		}
@@ -75,23 +75,26 @@ func filterMissing(names []string, v reflect.Value) []string {
 	return n
 }
 
-// TODO : remove missing fields from names
-// func missing()
-
-func value(arg interface{}, key string) interface{} {
+func value(key string, arg interface{}, args map[string]interface{}) interface{} {
 	if m, ok := arg.(map[string]interface{}); ok {
-		return m[key]
+		if val, found := m[key]; found {
+			return val
+		} else if args != nil {
+			return args[key]
+		}
 	} else if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
-		if fv, found := field(v, key); found {
+		if fv, found := field(key, v); found {
 			return fv.Interface()
+		} else if args != nil {
+			return args[key]
 		}
 	}
 	return nil
 }
 
-func pointerto(arg interface{}, key string) (interface{}, error) {
+func pointerto(key string, arg interface{}) (interface{}, error) {
 	if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
-		if fv, found := field(v, key); found {
+		if fv, found := field(key, v); found {
 			if !fv.CanAddr() {
 				return nil, ErrNoPointerToField
 			}
@@ -101,7 +104,7 @@ func pointerto(arg interface{}, key string) (interface{}, error) {
 	return nil, ErrFieldNotFound
 }
 
-func field(v reflect.Value, key string) (reflect.Value, bool) {
+func field(key string, v reflect.Value) (reflect.Value, bool) {
 	is, found := fieldMap.index[v.Type()]
 	if !found {
 		is = map[string][]int{}

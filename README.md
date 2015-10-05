@@ -104,7 +104,7 @@ type Example struct {
 
 See [jsontypes](https://github.com/jfbus/jsontypes) for all types.
 
-More generally, all struct that implement `WillUpdate() bool` will be managed by sqlbind.
+More generally, all structs that implement `WillUpdate() bool` will be managed by sqlbind.
 
 ## Result struct binding
 

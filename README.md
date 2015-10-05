@@ -40,9 +40,9 @@ Named placeholders are automatically translated to the right driver-dependant pl
 ```
 sqlbind.SetStyle(sqlbind.MySQL)
 ```
-or `$N` for Postgresql
+or `$N` for PostgreSQL
 ```
-sqlbind.SetStyle(sqlbind.Postgresql)
+sqlbind.SetStyle(sqlbind.PostgreSQL)
 ```
 
 Colons inside quotes are ignored and do not need to be escaped (`":value"` will neither be rewritten neither considered a named parameter), but otherwise need to be doubled (`::value` will be rewritten to `:value` but not be considered a named parameter). 

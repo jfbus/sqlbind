@@ -20,7 +20,7 @@ var (
 	ErrFieldNotFound    = errors.New("Field not found")
 )
 
-// Register is not safe. Do not use concurently.
+// Register registers a type to be used Register is not safe. Do not use concurently.
 func Register(l ...interface{}) {
 	for _, i := range l {
 		t := reflect.Indirect(reflect.ValueOf(i)).Type()

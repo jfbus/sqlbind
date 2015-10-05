@@ -17,7 +17,7 @@ type testCase struct {
 
 func doTest(t *testing.T, data interface{}, table []testCase, comment string) {
 	my := New(MySQL)
-	pg := New(Postgresql)
+	pg := New(PostgreSQL)
 	for _, it := range table {
 		if it.opts == nil {
 			it.opts = []NamedOption{}

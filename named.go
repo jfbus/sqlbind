@@ -11,7 +11,7 @@ import (
 
 const (
 	MySQL = Style(iota)
-	Postgresql
+	PostgreSQL
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 	defaultBinder        = New(MySQL)
 )
 
-// The placeholder style to be used, either MySQL (?) or Postgresql ($N)
+// The placeholder style to be used, either MySQL (?) or PostgreSQL ($N)
 type Style int
 
 type SQLBinder struct {
@@ -29,7 +29,7 @@ type SQLBinder struct {
 	cache map[string]*decoded
 }
 
-// New creates a SQLBinder object, using the specified placeholder style
+// New creates a SQLBinder object, using the specified placeholder style (MySQL or PostgreSQL)
 func New(style Style) *SQLBinder {
 	return &SQLBinder{
 		style: style,
@@ -37,7 +37,7 @@ func New(style Style) *SQLBinder {
 	}
 }
 
-// SetStyle sets the style of the default binder
+// SetStyle sets the style (MySQL or PostgreSQL) of the default binder
 func SetStyle(style Style) {
 	defaultBinder.style = style
 }
@@ -52,19 +52,19 @@ type NamedOption func(*context) error
 // Named formats a SQL query, parsing named parameters and variables using the default binder.
 // It returns the SQL query and the list of parameters to be used for the database/sql call
 //
-//   sql, sqlargs, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", args)
-//   rows, err := db.Query(sql, sqlargs...)
+//   sql, args, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", arg)
+//   rows, err := db.Query(sql, args...)
 //
 // args can either be a map[string]interface{} or a struct
-func Named(sql string, args interface{}, opts ...NamedOption) (string, []interface{}, error) {
-	return defaultBinder.Named(sql, args, opts...)
+func Named(sql string, arg interface{}, opts ...NamedOption) (string, []interface{}, error) {
+	return defaultBinder.Named(sql, arg, opts...)
 }
 
 // Named formats a SQL query, parsing named parameters and variables using the specified binder
 // It returns the SQL query and the list of parameters to be used for the database/sql call
 //
-//   sql, sqlargs, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", args)
-//   rows, err := db.Query(sql, sqlargs...)
+//   sql, args, err := sqlbin.Named("SELECT * FROM example WHERE foo=:foo", arg)
+//   rows, err := db.Query(sql, args...)
 //
 // args can either be a map[string]interface{} or a struct
 func (s *SQLBinder) Named(sql string, arg interface{}, opts ...NamedOption) (string, []interface{}, error) {
@@ -110,11 +110,16 @@ func Variables(vars ...string) NamedOption {
 
 // Only sets the list of parameters to be used in ::names, ::values and ::name=::value tags.
 //
-//  sqlbin.Named("UPDATE example SET ::name=::value WHERE foo=:foo", args, sqlbind.Only("bar", "baz"))
+// 	var e struct {
+// 		Foo string `db:"foo"`
+// 		Bar string `db:"bar"`
+// 		Baz string `db:"baz"`
+// 	}
+//  sqlbin.Named("UPDATE example SET ::name=::value", arg, sqlbind.Only("bar", "baz"))
 //
 // would be equivalent to :
 //
-//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", args)
+//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz", args)
 func Only(names ...string) NamedOption {
 	return func(e *context) error {
 		e.names = names
@@ -124,11 +129,16 @@ func Only(names ...string) NamedOption {
 
 // Exclude removes parameters from ::names, ::values and ::name=::value tags.
 //
-//  sqlbin.Named("UPDATE example SET ::name=::value WHERE foo=:foo", args, sqlbind.Exclude("foo"))
+// 	var e struct {
+// 		Foo string `db:"foo"`
+// 		Bar string `db:"bar"`
+// 		Baz string `db:"baz"`
+// 	}
+//  sqlbin.Named("UPDATE example SET ::name=::value", arg, sqlbind.Exclude("foo"))
 //
 // would be equivalent to :
 //
-//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", args)
+//  sqlbin.Named("UPDATE example SET bar=:bar, baz=:baz", args)
 func Exclude(names ...string) NamedOption {
 	ex := map[string]struct{}{}
 	for _, name := range names {
@@ -249,7 +259,7 @@ func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (str
 
 func (s *SQLBinder) writePlaceholder(buf *bytes.Buffer, i int) {
 	switch s.style {
-	case Postgresql:
+	case PostgreSQL:
 		buf.WriteByte('$')
 		buf.WriteString(strconv.Itoa(i))
 	default:

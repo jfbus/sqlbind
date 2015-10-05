@@ -22,8 +22,8 @@
 //
 // Named placeholders are automatically translated to the right driver-dependant placeholder : ? for MySQL (default style)
 //   sqlbind.SetStyle(sqlbind.MySQL)
-// or $N for Postgresql
-//   sqlbind.SetStyle(sqlbind.Postgresql)
+// or $N for PostgreSQL
+//   sqlbind.SetStyle(sqlbind.PostgreSQL)
 //
 // Colons inside quotes are ignored and do not need to be escaped (":foo" will neither be rewritten neither considered a named parameter), but otherwise need to be doubled (::foo will be rewritten to :foo but not be considered a named parameter).
 //

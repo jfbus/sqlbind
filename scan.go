@@ -1,7 +1,24 @@
 package sqlbind
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+	"reflect"
+)
 
+// Scan maps the columns of the current row of a sql.Rows result to a struct
+//
+//  type Example struct {
+//		ID   int    `db:"id,omit"`
+//		Name string `db:"name"`
+//	}
+//	rows, err := db.Query("SELECT * FROM example")
+//	...
+//	defer rows.Close()
+//	for rows.Next() {
+//	    e := Example{}
+//	    err = sqlbind.Scan(rows, &e)
+//	}
 func Scan(rows *sql.Rows, arg interface{}) error {
 	if rows.Err() != nil {
 		return rows.Err()
@@ -22,9 +39,16 @@ func Scan(rows *sql.Rows, arg interface{}) error {
 			vals[i] = ptr
 		}
 	}
+	fmt.Printf("%+v, %+v\n", names, reflect.ValueOf(arg).Type())
 	return rows.Scan(vals...)
 }
 
+// ScanRow maps the columns of the first row of a sql.Rows result either to a struct, and closes the rows.
+//
+// sql.QueryRow does not expose column names, therefore ScanRow uses sql.Rows instead of sql.Row.
+//
+// 	rows, err := db.Query("SELECT * FROM example")
+// 	err := sqlbind.ScanRow(rows, &e)
 func ScanRow(rows *sql.Rows, arg interface{}) error {
 	defer rows.Close()
 	if rows.Err() != nil {

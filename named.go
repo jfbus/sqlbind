@@ -104,10 +104,10 @@ func Variables(vars ...string) NamedOption {
 			if p.t == typeVariable {
 				if val, ok := v[p.data]; ok {
 					n = append(n, part{t: typeSQL, data: val})
+					continue
 				}
-			} else {
-				n = append(n, p)
 			}
+			n = append(n, p)
 		}
 		e.parts = n
 		return nil
@@ -260,6 +260,7 @@ func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (str
 	i := 1
 	for _, p := range e.parts {
 		switch p.t {
+		case typeVariable:
 		case typeSQL:
 			sql.WriteString(p.data)
 		case typePlaceholder:

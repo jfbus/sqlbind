@@ -112,6 +112,19 @@ func TestNamed(t *testing.T) {
 			args:  []interface{}{},
 		},
 		{
+			src:   `{comment}{comment2}`,
+			opts:  []NamedOption{Variables("comment", "foobarbaz"), Variables("comment2", "foobarbaz2")},
+			mySQL: `foobarbazfoobarbaz2`,
+			pgSQL: `foobarbazfoobarbaz2`,
+			args:  []interface{}{},
+		},
+		{
+			src:   `{comment}`,
+			mySQL: ``,
+			pgSQL: ``,
+			args:  []interface{}{},
+		},
+		{
 			src:   `SELECT * FROM foo where comment="{comment}"`,
 			opts:  []NamedOption{Variables("comment", "foobarbaz")},
 			mySQL: `SELECT * FROM foo where comment="{comment}"`,

@@ -61,7 +61,7 @@ func filterMissing(names []string, v reflect.Value) []string {
 	n := make([]string, 0, len(names))
 	for _, name := range names {
 		fv, ok := field(name, v)
-		if !ok {
+		if !ok || !fv.CanInterface() {
 			continue
 		}
 		if i, ok := fv.Interface().(WillUpdater); ok && i.WillUpdate() == false {
@@ -75,21 +75,22 @@ func filterMissing(names []string, v reflect.Value) []string {
 	return n
 }
 
-func value(key string, arg interface{}, args map[string]interface{}) interface{} {
+func value(key string, arg interface{}, args ...interface{}) (interface{}, bool) {
 	if m, ok := arg.(map[string]interface{}); ok {
 		if val, found := m[key]; found {
-			return val
-		} else if args != nil {
-			return args[key]
+			return val, true
 		}
 	} else if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
-		if fv, found := field(key, v); found {
-			return fv.Interface()
-		} else if args != nil {
-			return args[key]
+		if fv, found := field(key, v); found && fv.CanInterface() {
+			return fv.Interface(), true
 		}
 	}
-	return nil
+	for _, arg := range args {
+		if val, found := value(key, arg); found {
+			return val, found
+		}
+	}
+	return nil, false
 }
 
 func pointerto(key string, arg interface{}) (interface{}, error) {

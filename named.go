@@ -47,7 +47,7 @@ type context struct {
 	parts   []part
 	names   []string
 	decoded *decoded
-	args    map[string]interface{}
+	args    []interface{}
 }
 
 type NamedOption func(*context) error
@@ -169,22 +169,41 @@ func Exclude(names ...string) NamedOption {
 // 		Bar string `db:"bar"`
 // 		Baz string `db:"baz"`
 // 	}
-//  sqlbind.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", arg, sqlbind.Args("foo", "foobar", "foobar", 42))
+//  sqlbind.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", arg, sqlbind.Args(&e{...}))
 func Args(args ...interface{}) NamedOption {
+	return func(e *context) error {
+		if e.args == nil {
+			e.args = make([]interface{}, 0, len(args))
+		}
+		e.args = append(e.args, args...)
+		return nil
+	}
+}
+
+// ArgData adds additional args to be used as named parameters.
+//
+// 	var e struct {
+// 		Bar string `db:"bar"`
+// 		Baz string `db:"baz"`
+// 	}
+//  sqlbind.Named("UPDATE example SET bar=:bar, baz=:baz WHERE foo=:foo", arg, sqlbind.ArgData("foo", "foobar"))
+func ArgData(args ...interface{}) NamedOption {
 	if len(args)%2 != 0 {
 		return errorOption(errors.New("Args() must have a multiple of 2 args"))
 	}
 	return func(e *context) error {
 		if e.args == nil {
-			e.args = map[string]interface{}{}
+			e.args = make([]interface{}, 0, 1)
 		}
+		data := map[string]interface{}{}
 		for i := 0; i < len(args); i += 2 {
 			if name, ok := args[i].(string); ok {
-				e.args[name] = args[i+1]
+				data[name] = args[i+1]
 			} else {
 				return fmt.Errorf("Args() keys must be string, not %#v", args[i+1])
 			}
 		}
+		e.args = append(e.args, data)
 		return nil
 	}
 }
@@ -264,7 +283,7 @@ func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (str
 		case typeSQL:
 			sql.WriteString(p.data)
 		case typePlaceholder:
-			val := value(p.data, arg, e.args)
+			val, _ := value(p.data, arg, e.args...)
 			if rval := reflect.ValueOf(val); rval.Kind() == reflect.Slice {
 				for si := 0; si < rval.Len(); si++ {
 					if si != 0 {

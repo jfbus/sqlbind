@@ -46,6 +46,9 @@ func doTest(t *testing.T, data interface{}, table []testCase, comment string) {
 }
 
 func TestNamed(t *testing.T) {
+	type testArg struct {
+		FooFoo string `db:"foofoo"`
+	}
 	tc := []testCase{
 		{
 			src:   ``,
@@ -85,7 +88,21 @@ func TestNamed(t *testing.T) {
 		},
 		{
 			src:   `SELECT * FROM foo WHERE foo=:foo AND foofoo=:foofoo`,
-			opts:  []NamedOption{Args("foofoo", "foofoobar")},
+			opts:  []NamedOption{ArgData("foofoo", "foofoobar")},
+			mySQL: `SELECT * FROM foo WHERE foo=? AND foofoo=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND foofoo=$2`,
+			args:  []interface{}{"foobar", "foofoobar"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND foofoo=:foofoo`,
+			opts:  []NamedOption{Args(map[string]interface{}{"foofoo": "foofoobar"})},
+			mySQL: `SELECT * FROM foo WHERE foo=? AND foofoo=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND foofoo=$2`,
+			args:  []interface{}{"foobar", "foofoobar"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND foofoo=:foofoo`,
+			opts:  []NamedOption{Args(&testArg{FooFoo: "foofoobar"})},
 			mySQL: `SELECT * FROM foo WHERE foo=? AND foofoo=?`,
 			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND foofoo=$2`,
 			args:  []interface{}{"foobar", "foofoobar"},

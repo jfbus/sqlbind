@@ -63,7 +63,7 @@ sqlbind.Named("INSERT INTO example (::names) VALUES(::values)", map[string]inter
 or using struct tags (better performance) :
 ```
 type Example struct {
-	ID   int    `db:"id,omit"` // will not be expanded by ::names and ::name=::value
+	ID   int    `db:"id,ro"` // will not be expanded by ::names and ::name=::value
 }
 ```
 
@@ -114,7 +114,7 @@ More generally, all structs that implement `WillUpdate() bool` will be managed b
 
 ```
 type Example struct {
-	ID   int    `db:"id,omit"`
+	ID   int    `db:"id,ro"`
 	Name string `db:"name"`
 }
 rows, err := db.Query("SELECT * FROM example")
@@ -143,8 +143,8 @@ sqlbind.Register(Example{}, Foo{})
 Benchmark against [sqlx](https://github.com/jmoiron/sqlx):
 
 ```
-BenchmarkSQLBindNamedRegister-4  	 1000000	      1922 ns/op	     272 B/op	       5 allocs/op
-BenchmarkSqlxNamed-4             	  500000	      2298 ns/op	     624 B/op	      13 allocs/op
+BenchmarkSQLBindNamedRegister-4  	 1000000	      2069 ns/op	     288 B/op	       5 allocs/op
+BenchmarkSqlxNamed-4             	  500000	      2382 ns/op	     624 B/op	      13 allocs/op
 ```
 
 ## Instances

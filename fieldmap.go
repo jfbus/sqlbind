@@ -137,7 +137,7 @@ func buildNames(t reflect.Type) []string {
 			}
 		}
 		name, opt := parseTag(tag)
-		if opt == "omit" {
+		if opt == "ro" {
 			continue
 		}
 		if name == "" {

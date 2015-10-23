@@ -271,7 +271,7 @@ func TestNamedIn(t *testing.T) {
 	}, tc, "struct/in")
 }
 
-func TestOmit(t *testing.T) {
+func TestRO(t *testing.T) {
 	tc := []testCase{
 		{
 			src:   `INSERT INTO example (::names) VALUES(::values)`,
@@ -288,12 +288,12 @@ func TestOmit(t *testing.T) {
 	}
 	type testStructOmit struct {
 		Foo string `db:"foo"`
-		Bar string `db:"bar,omit"`
+		Bar string `db:"bar,ro"`
 	}
 	doTest(t, testStructOmit{
 		Foo: "foobar",
 		Bar: "barbar",
-	}, tc, "struct/omit")
+	}, tc, "struct/ro")
 }
 
 func TestNoTag(t *testing.T) {

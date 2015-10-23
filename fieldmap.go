@@ -121,23 +121,29 @@ func buildNames(t reflect.Type) []string {
 	names := make(sort.StringSlice, 0, t.NumField())
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
+		ft := f.Type
 		tag := f.Tag.Get("db")
 		if tag == "-" {
 			continue
 		}
-		if tag == "" && f.Type.Kind() == reflect.Struct {
-			add := buildNames(f.Type)
-			names = append(names, add...)
-		} else {
-			name, opt := parseTag(tag)
-			if opt == "omit" {
+		if tag == "" {
+			if ft.Kind() == reflect.Ptr {
+				ft = ft.Elem()
+			}
+			if ft.Kind() == reflect.Struct {
+				add := buildNames(ft)
+				names = append(names, add...)
 				continue
 			}
-			if name == "" {
-				name = f.Name
-			}
-			names = append(names, name)
 		}
+		name, opt := parseTag(tag)
+		if opt == "omit" {
+			continue
+		}
+		if name == "" {
+			name = f.Name
+		}
+		names = append(names, name)
 	}
 	sort.Sort(&names)
 	return []string(names)
@@ -146,6 +152,7 @@ func buildNames(t reflect.Type) []string {
 func buildIndexes(t reflect.Type, idx []int, m map[string][]int) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
+		ft := f.Type
 		tag := f.Tag.Get("db")
 		if tag == "-" {
 			continue
@@ -155,15 +162,20 @@ func buildIndexes(t reflect.Type, idx []int, m map[string][]int) {
 		copy(nidx, idx)
 		nidx = append(nidx, i)
 
-		if tag == "" && f.Type.Kind() == reflect.Struct {
-			buildIndexes(f.Type, nidx, m)
-		} else {
-			name, _ := parseTag(tag)
-			if name == "" {
-				name = f.Name
+		if tag == "" {
+			if ft.Kind() == reflect.Ptr {
+				ft = ft.Elem()
 			}
-			m[name] = nidx
+			if ft.Kind() == reflect.Struct {
+				buildIndexes(ft, nidx, m)
+				continue
+			}
 		}
+		name, _ := parseTag(tag)
+		if name == "" {
+			name = f.Name
+		}
+		m[name] = nidx
 	}
 }
 

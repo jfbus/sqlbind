@@ -125,7 +125,7 @@ func buildNames(t reflect.Type) []string {
 		f := t.Field(i)
 		ft := f.Type
 		tag := f.Tag.Get("db")
-		if tag == "-" {
+		if tag == "-" || (f.PkgPath != "" && !f.Anonymous) {
 			continue
 		}
 		if tag == "" {
@@ -156,7 +156,7 @@ func buildIndexes(t reflect.Type, idx []int, m map[string][]int) {
 		f := t.Field(i)
 		ft := f.Type
 		tag := f.Tag.Get("db")
-		if tag == "-" {
+		if tag == "-" || (f.PkgPath != "" && !f.Anonymous) {
 			continue
 		}
 

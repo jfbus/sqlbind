@@ -21,7 +21,7 @@ var (
 )
 
 // Register registers a type to be used Register is not safe. Do not use concurently.
-func Register(l ...interface{}) {
+func Register(l ...interface{}) struct{} {
 	for _, i := range l {
 		t := reflect.Indirect(reflect.ValueOf(i)).Type()
 
@@ -31,6 +31,8 @@ func Register(l ...interface{}) {
 
 		fieldMap.names[t] = buildNames(t)
 	}
+
+	return struct{}{}
 }
 
 func names(arg interface{}) []string {

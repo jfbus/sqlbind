@@ -242,6 +242,79 @@ func TestNamed(t *testing.T) {
 	}, tc, "embed")
 }
 
+func TestNamedDuplicateArgs(t *testing.T) {
+	type testStruct struct {
+		Foo string      `db:"foo"`
+		Bar interface{} `db:"bar"`
+	}
+	tc := []testCase{
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND bar=:bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{"foobar", "barfoo"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND bar=:bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			opts:  []NamedOption{Args(&testStruct{Bar: "foofoobar"})},
+			args:  []interface{}{"foobar", "barfoo"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND bar=:bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			opts:  []NamedOption{Args(map[string]interface{}{"bar": "foofoobar"})},
+			args:  []interface{}{"foobar", "barfoo"},
+		},
+	}
+	doTest(t, map[string]interface{}{
+		"foo": "foobar",
+		"bar": "barfoo",
+	}, tc, "duplicate1")
+	doTest(t, &testStruct{
+		Foo: "foobar",
+		Bar: "barfoo",
+	}, tc, "duplicate2")
+}
+
+func TestNamedDefaultArgs(t *testing.T) {
+	type testStruct struct {
+		Foo string      `db:"foo"`
+		Bar interface{} `db:"bar"`
+	}
+	tc := []testCase{
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND bar=:bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{"foobar", nil},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND bar=:bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			opts:  []NamedOption{Args(&testStruct{Bar: "barfoo"})},
+			args:  []interface{}{"foobar", "barfoo"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:foo AND bar=:bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			opts:  []NamedOption{Args(map[string]interface{}{"bar": "barfoo"})},
+			args:  []interface{}{"foobar", "barfoo"},
+		},
+	}
+	doTest(t, map[string]interface{}{
+		"foo": "foobar",
+		"bar": nil,
+	}, tc, "default1")
+	doTest(t, &testStruct{
+		Foo: "foobar",
+		Bar: nil,
+	}, tc, "default2")
+}
 func TestNamedIn(t *testing.T) {
 	tc := []testCase{
 		{

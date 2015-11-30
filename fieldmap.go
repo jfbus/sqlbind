@@ -78,13 +78,22 @@ func filterMissing(names []string, v reflect.Value) []string {
 }
 
 func value(key string, arg interface{}, args ...interface{}) (interface{}, bool) {
+	nilfound := false
 	if m, ok := arg.(map[string]interface{}); ok {
 		if val, found := m[key]; found {
-			return val, true
+			if val == nil {
+				nilfound = true
+			} else {
+				return val, true
+			}
 		}
 	} else if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
 		if fv, found := field(key, v); found && fv.CanInterface() {
-			return fv.Interface(), true
+			if !fv.IsValid() || fv.Interface() == nil {
+				nilfound = true
+			} else {
+				return fv.Interface(), true
+			}
 		}
 	}
 	for _, arg := range args {
@@ -92,7 +101,7 @@ func value(key string, arg interface{}, args ...interface{}) (interface{}, bool)
 			return val, found
 		}
 	}
-	return nil, false
+	return nil, nilfound
 }
 
 func pointerto(key string, arg interface{}) (interface{}, error) {

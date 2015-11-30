@@ -67,7 +67,7 @@
 //
 // * jsontypes.ROString will never be expanded
 //
-// More generally, all structs that implement `WillUpdate() bool` will be managed by sqlbind.
+// More generally, all structs that implement `Missing() bool` will be managed by sqlbind.
 //
 // Result struct binding
 //

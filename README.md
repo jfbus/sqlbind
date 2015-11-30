@@ -35,7 +35,7 @@ type Example struct {
 e := Example{Name: "foo"}
 sqlbind.Named("SELECT * FROM example WHERE name=:name", e)
 ```
-Add args to a struct (e.g. from query string parameters) : 
+Add args to a struct (e.g. from query string parameters) :
 ```
 sqlbind.Named("SELECT * FROM example WHERE name=:name AND domain=:domain", e, sqlbind.Args("domain", "example.com"))
 ```
@@ -49,7 +49,7 @@ or `$N` for PostgreSQL
 sqlbind.SetStyle(sqlbind.PostgreSQL)
 ```
 
-Colons inside quotes are ignored and do not need to be escaped (`":value"` will neither be rewritten neither considered a named parameter), but otherwise need to be doubled (`::value` will be rewritten to `:value` but not be considered a named parameter). 
+Colons inside quotes are ignored and do not need to be escaped (`":value"` will neither be rewritten neither considered a named parameter), but otherwise need to be doubled (`::value` will be rewritten to `:value` but not be considered a named parameter).
 
 ## Controlling ::names and ::name=::value
 
@@ -108,7 +108,7 @@ type Example struct {
 
 See [jsontypes](https://github.com/jfbus/jsontypes) for all types.
 
-More generally, all structs that implement `WillUpdate() bool` will be managed by sqlbind.
+More generally, all structs that implement `Missing() bool` will be managed by sqlbind.
 
 ## Result struct binding
 

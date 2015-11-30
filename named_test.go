@@ -400,15 +400,15 @@ func TestNoTag(t *testing.T) {
 	}, tc, "struct/notag")
 }
 
-type Missing bool
+type MissingField bool
 
-func (m Missing) WillUpdate() bool {
-	return !bool(m)
+func (m MissingField) Missing() bool {
+	return bool(m)
 }
 
 func TestMissing(t *testing.T) {
 	type testStructMissing struct {
-		Foo Missing
+		Foo MissingField
 		Bar *string
 		Baz string
 	}
@@ -423,19 +423,19 @@ func TestMissing(t *testing.T) {
 			src:   `INSERT INTO example (::names) VALUES(::values)`,
 			mySQL: `INSERT INTO example (Bar, Baz, Foo) VALUES(?, ?, ?)`,
 			pgSQL: `INSERT INTO example (Bar, Baz, Foo) VALUES($1, $2, $3)`,
-			args:  []interface{}{tt.Bar, "bazbar", Missing(false)},
+			args:  []interface{}{tt.Bar, "bazbar", MissingField(false)},
 		},
 		{
 			src:   `UPDATE example SET ::name=::value`,
 			mySQL: `UPDATE example SET Bar=?, Baz=?, Foo=?`,
 			pgSQL: `UPDATE example SET Bar=$1, Baz=$2, Foo=$3`,
-			args:  []interface{}{tt.Bar, "bazbar", Missing(false)},
+			args:  []interface{}{tt.Bar, "bazbar", MissingField(false)},
 		},
 		{
 			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
 			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
 			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
-			args:  []interface{}{Missing(false), tt.Bar},
+			args:  []interface{}{MissingField(false), tt.Bar},
 		},
 	}, "struct/missing/none")
 	tt.Foo = true
@@ -456,7 +456,7 @@ func TestMissing(t *testing.T) {
 			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
 			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
 			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
-			args:  []interface{}{Missing(true), tt.Bar},
+			args:  []interface{}{nil, tt.Bar},
 		},
 	}, "struct/missing/struct")
 	tt.Foo = false
@@ -466,19 +466,19 @@ func TestMissing(t *testing.T) {
 			src:   `INSERT INTO example (::names) VALUES(::values)`,
 			mySQL: `INSERT INTO example (Baz, Foo) VALUES(?, ?)`,
 			pgSQL: `INSERT INTO example (Baz, Foo) VALUES($1, $2)`,
-			args:  []interface{}{"bazbar", Missing(false)},
+			args:  []interface{}{"bazbar", MissingField(false)},
 		},
 		{
 			src:   `UPDATE example SET ::name=::value`,
 			mySQL: `UPDATE example SET Baz=?, Foo=?`,
 			pgSQL: `UPDATE example SET Baz=$1, Foo=$2`,
-			args:  []interface{}{"bazbar", Missing(false)},
+			args:  []interface{}{"bazbar", MissingField(false)},
 		},
 		{
 			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
 			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
 			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
-			args:  []interface{}{Missing(false), tt.Bar},
+			args:  []interface{}{MissingField(false), tt.Bar},
 		},
 	}, "struct/missing/ptr")
 }

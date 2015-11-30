@@ -89,7 +89,9 @@ func value(key string, arg interface{}, args ...interface{}) (interface{}, bool)
 		}
 	} else if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
 		if fv, found := field(key, v); found && fv.CanInterface() {
-			if !fv.IsValid() || fv.Interface() == nil {
+			if i, ok := fv.Interface().(WillUpdater); ok && i.WillUpdate() == false {
+				nilfound = true
+			} else if !fv.IsValid() || fv.Interface() == nil {
 				nilfound = true
 			} else {
 				return fv.Interface(), true

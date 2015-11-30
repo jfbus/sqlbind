@@ -55,7 +55,7 @@ func names(arg interface{}) []string {
 	return []string{}
 }
 
-type Missing interface {
+type Missinger interface {
 	Missing() bool
 }
 
@@ -66,7 +66,7 @@ func filterMissing(names []string, v reflect.Value) []string {
 		if !ok || !fv.CanInterface() {
 			continue
 		}
-		if i, ok := fv.Interface().(Missing); ok && i.Missing() {
+		if i, ok := fv.Interface().(Missinger); ok && i.Missing() {
 			continue
 		}
 		if fv.Kind() == reflect.Ptr && fv.IsNil() {
@@ -89,7 +89,7 @@ func value(key string, arg interface{}, args ...interface{}) (interface{}, bool)
 		}
 	} else if v := reflect.Indirect(reflect.ValueOf(arg)); v.Type().Kind() == reflect.Struct {
 		if fv, found := field(key, v); found && fv.CanInterface() {
-			if i, ok := fv.Interface().(Missing); ok && i.Missing() {
+			if i, ok := fv.Interface().(Missinger); ok && i.Missing() {
 				nilfound = true
 			} else if !fv.IsValid() || fv.Interface() == nil {
 				nilfound = true

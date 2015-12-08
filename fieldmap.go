@@ -124,8 +124,18 @@ func field(key string, v reflect.Value) (reflect.Value, bool) {
 		is = map[string][]int{}
 		buildIndexes(v.Type(), []int{}, is)
 	}
-	if i, found := is[key]; found {
-		return v.FieldByIndex(i), true
+	if idxs, found := is[key]; found {
+		for i, idx := range idxs {
+			v = v.FieldByIndex([]int{idx})
+			if i != len(idxs)-1 {
+				if v.Type().Kind() == reflect.Ptr && v.IsNil() {
+					return reflect.Value{}, false
+				} else {
+					v = reflect.Indirect(v)
+				}
+			}
+		}
+		return v, true
 	}
 	return reflect.Value{}, false
 }

@@ -315,6 +315,7 @@ func TestNamedDefaultArgs(t *testing.T) {
 		Bar: nil,
 	}, tc, "default2")
 }
+
 func TestNamedIn(t *testing.T) {
 	tc := []testCase{
 		{
@@ -481,6 +482,62 @@ func TestMissing(t *testing.T) {
 			args:  []interface{}{MissingField(false), tt.Bar},
 		},
 	}, "struct/missing/ptr")
+}
+
+func TestNullField(t *testing.T) {
+
+	type testStructEmbeded struct {
+		Foo string
+	}
+
+	type testStructEmbed struct {
+		FooEmbed *testStructEmbeded
+		Bar      string
+	}
+	tt := testStructEmbed{
+		Bar: "bazbar",
+	}
+	doTest(t, tt, []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (Bar) VALUES(?)`,
+			pgSQL: `INSERT INTO example (Bar) VALUES($1)`,
+			args:  []interface{}{"bazbar"},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value`,
+			mySQL: `UPDATE example SET Bar=?`,
+			pgSQL: `UPDATE example SET Bar=$1`,
+			args:  []interface{}{"bazbar"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:Foo`,
+			mySQL: `SELECT * FROM foo WHERE foo=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1`,
+			args:  []interface{}{nil},
+		},
+	}, "struct/null/null")
+	tt.FooEmbed = &testStructEmbeded{Foo: "foobar"}
+	doTest(t, tt, []testCase{
+		{
+			src:   `INSERT INTO example (::names) VALUES(::values)`,
+			mySQL: `INSERT INTO example (Bar, Foo) VALUES(?, ?)`,
+			pgSQL: `INSERT INTO example (Bar, Foo) VALUES($1, $2)`,
+			args:  []interface{}{"bazbar", "foobar"},
+		},
+		{
+			src:   `UPDATE example SET ::name=::value`,
+			mySQL: `UPDATE example SET Bar=?, Foo=?`,
+			pgSQL: `UPDATE example SET Bar=$1, Foo=$2`,
+			args:  []interface{}{"bazbar", "foobar"},
+		},
+		{
+			src:   `SELECT * FROM foo WHERE foo=:Foo AND bar=:Bar`,
+			mySQL: `SELECT * FROM foo WHERE foo=? AND bar=?`,
+			pgSQL: `SELECT * FROM foo WHERE foo=$1 AND bar=$2`,
+			args:  []interface{}{"foobar", "bazbar"},
+		},
+	}, "struct/null/notnull")
 }
 
 func TestErrors(t *testing.T) {

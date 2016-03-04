@@ -284,7 +284,7 @@ func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (str
 			sql.WriteString(p.data)
 		case typePlaceholder:
 			val, _ := value(p.data, arg, e.args...)
-			if rval := reflect.ValueOf(val); rval.Kind() == reflect.Slice {
+			if rval := reflect.ValueOf(val); shouldExpandSlice(rval) {
 				for si := 0; si < rval.Len(); si++ {
 					if si != 0 {
 						sql.WriteString(", ")
@@ -303,6 +303,17 @@ func (s *SQLBinder) named(c *decoded, arg interface{}, opts ...NamedOption) (str
 		}
 	}
 	return sql.String(), args, nil
+}
+
+func shouldExpandSlice(rval reflect.Value) bool {
+	if rval.Kind() != reflect.Slice {
+		return false
+	}
+	// Do not expand byte slices, which correspond to BLOB or BYTES SQL types.
+	if rval.Type().Elem().Kind() == reflect.Uint8 {
+		return false
+	}
+	return true
 }
 
 func (s *SQLBinder) writePlaceholder(buf *bytes.Buffer, i int) {
